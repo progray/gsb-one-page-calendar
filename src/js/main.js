@@ -259,8 +259,8 @@ function findDateCell(day) {
   return null;
 }
 
-function findDayCellByWeekday(weekday, months) {
-  const dayCells = document.querySelectorAll('.day');
+function findDayCellInRow(row, weekday, months) {
+  const dayCells = row.querySelectorAll('.day');
   for (let cell of dayCells) {
     const cellMonths = cell.dataset.months ? JSON.parse(cell.dataset.months) : [];
     const cellWeekday = parseInt(cell.dataset.day);
@@ -285,6 +285,22 @@ function clearLunarDisplay() {
   document.querySelectorAll('.lunar-fade-in').forEach(el => {
     el.classList.remove('lunar-fade-in');
   });
+  
+  document.querySelectorAll('.lunar-cell').forEach(el => {
+    el.classList.remove('lunar-cell');
+    el.style.cursor = '';
+    el.style.position = '';
+    el.removeAttribute('data-solar-year');
+    el.removeAttribute('data-solar-month');
+    el.removeAttribute('data-solar-day');
+    el.removeAttribute('data-lunar-year');
+    el.removeAttribute('data-lunar-month');
+    el.removeAttribute('data-lunar-day');
+    el.removeAttribute('data-gan-zhi');
+    el.removeAttribute('data-sheng-xiao');
+    el.removeAttribute('data-jie-qi');
+    el.removeAttribute('data-festival');
+  });
 }
 
 function showLunarInfoForMonth(year, month) {
@@ -297,41 +313,41 @@ function showLunarInfoForMonth(year, month) {
       const dateCell = findDateCell(day);
       if (!dateCell) return;
       
-      const dayCell = findDayCellByWeekday(weekday, [month]);
+      const row = dateCell.parentNode;
+      const dayCell = findDayCellInRow(row, weekday, [month]);
       if (!dayCell) return;
       
       const cellMonths = dayCell.dataset.months ? JSON.parse(dayCell.dataset.months) : [];
       if (!cellMonths.includes(month)) return;
       
-      let displayText = '';
+      let infoHtml = '';
       
       if (dateInfo.jieQi) {
-        displayText = `<span class="jieqi-text text-danger fw-bold">${dateInfo.jieQi}</span>`;
+        infoHtml = `<span class="jieqi-text text-danger fw-bold">${dateInfo.jieQi}</span>`;
       } else if (dateInfo.lunar.day === 1) {
-        const leapClass = dateInfo.lunar.isLeap ? 'text-muted fst-italic' : '';
-        displayText = `<span class="lunar-info ${leapClass}">${dateInfo.lunar.monthStr}</span>`;
+        const leapClass = dateInfo.lunar.isLeap ? 'lunar-leap' : '';
+        infoHtml = `<span class="lunar-info ${leapClass}">${dateInfo.lunar.monthStr}</span>`;
       } else {
-        const leapClass = dateInfo.lunar.isLeap ? 'text-muted fst-italic' : '';
-        displayText = `<span class="lunar-info ${leapClass}">${dateInfo.lunar.dayStr}</span>`;
+        const leapClass = dateInfo.lunar.isLeap ? 'lunar-leap' : '';
+        infoHtml = `<span class="lunar-info ${leapClass}">${dateInfo.lunar.dayStr}</span>`;
       }
       
-      const infoSpan = document.createElement('span');
-      infoSpan.innerHTML = displayText;
-      infoSpan.classList.add('small', 'lunar-fade-in');
+      const infoWrapper = document.createElement('span');
+      infoWrapper.className = 'lunar-info-wrapper lunar-fade-in';
+      infoWrapper.innerHTML = infoHtml;
       
-      dayCell.appendChild(infoSpan);
+      const existingWrapper = dayCell.querySelector('.lunar-info-wrapper');
+      if (existingWrapper) {
+        existingWrapper.remove();
+      }
+      
+      dayCell.appendChild(infoWrapper);
       
       if (dateInfo.festival) {
         const badge = document.createElement('span');
-        badge.className = 'festival-badge position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center lunar-fade-in';
-        badge.style.width = '16px';
-        badge.style.height = '16px';
-        badge.style.fontSize = '8px';
-        badge.style.backgroundColor = '#dc3545';
-        badge.style.color = 'white';
+        badge.className = 'festival-badge lunar-fade-in';
         badge.title = dateInfo.festival;
         badge.textContent = '节';
-        dayCell.style.position = 'relative';
         dayCell.appendChild(badge);
       }
       
