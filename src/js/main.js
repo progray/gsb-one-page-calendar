@@ -7,9 +7,9 @@ const ParticleSystem = {
   particles: [],
   hoverParticles: [],
   currentHoverCell: null,
-  hoverParticleTimer: null,
   isRunning: false,
   animationId: null,
+  isInitialized: false,
   
   // Particle colors by cell type
   colors: {
@@ -18,16 +18,34 @@ const ParticleSystem = {
     day: { r: 255, g: 191, b: 0 }         // Amber
   },
   
+  // Hover particle generation timing
+  lastHoverParticleTime: 0,
+  hoverParticleInterval: 300, // 300ms between hover particle generations
+  
   // Initialize the particle system
   init: function() {
+    if (this.isInitialized) return;
+    
     this.canvas = document.getElementById('particle-canvas');
-    if (!this.canvas) return;
+    if (!this.canvas) {
+      console.warn('Particle canvas not found');
+      return;
+    }
     
     this.ctx = this.canvas.getContext('2d');
+    if (!this.ctx) {
+      console.warn('Cannot get 2D context');
+      return;
+    }
+    
     this.resizeCanvas();
     this.setupEventListeners();
+    this.isInitialized = true;
     this.isRunning = true;
-    this.animate();
+    this.lastTime = performance.now();
+    this.animate(this.lastTime);
+    
+    console.log('Particle System initialized successfully');
   },
   
   // Resize canvas to match calendar container
@@ -36,8 +54,13 @@ const ParticleSystem = {
     if (!container || !this.canvas) return;
     
     const rect = container.getBoundingClientRect();
-    this.canvas.width = rect.width;
-    this.canvas.height = rect.height;
+    
+    // Only resize if dimensions actually changed
+    if (this.canvas.width !== rect.width || this.canvas.height !== rect.height) {
+      this.canvas.width = rect.width;
+      this.canvas.height = rect.height;
+      console.log('Canvas resized to:', rect.width, 'x', rect.height);
+    }
   },
   
   // Check if dark mode is enabled
@@ -64,9 +87,21 @@ const ParticleSystem = {
   
   // Get cell type from element
   getCellType: function(element) {
+    if (!element || !element.classList) return null;
     if (element.classList.contains('month')) return 'month';
     if (element.classList.contains('date')) return 'date';
     if (element.classList.contains('day')) return 'day';
+    return null;
+  },
+  
+  // Find the closest cell element from event target
+  findCellElement: function(element) {
+    while (element && element !== document && element !== null) {
+      if (this.getCellType(element)) {
+        return element;
+      }
+      element = element.parentNode;
+    }
     return null;
   },
   
@@ -88,6 +123,8 @@ const ParticleSystem = {
     
     const center = this.getCellCenter(element);
     const particleCount = Math.floor(Math.random() * 21) + 20; // 20-40 particles
+    
+    console.log('Creating burst of', particleCount, 'particles at', center.x, center.y);
     
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -201,7 +238,7 @@ const ParticleSystem = {
   
   // Render all particles
   render: function() {
-    if (!this.ctx) return;
+    if (!this.ctx || !this.canvas) return;
     
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -227,7 +264,7 @@ const ParticleSystem = {
   
   // Animation loop using requestAnimationFrame
   lastTime: 0,
-  animate: function(currentTime = 0) {
+  animate: function(currentTime) {
     if (!this.isRunning) return;
     
     const deltaTime = (currentTime - this.lastTime) / 1000;
@@ -254,70 +291,60 @@ const ParticleSystem = {
     }
   },
   
-  // Hover particle generation timing
-  lastHoverParticleTime: 0,
-  hoverParticleInterval: 300, // 300ms between hover particle generations
-  
-  // Find the closest cell element from event target
-  findCellElement: function(element) {
-    while (element && element !== document) {
-      if (this.getCellType(element)) {
-        return element;
-      }
-      element = element.parentNode;
-    }
-    return null;
-  },
-  
-  // Setup event listeners
+  // Setup event listeners - using document-level events to avoid Canvas interference
   setupEventListeners: function() {
-    // Click events on calendar cells
-    const calendar = document.getElementById('one-page-calendar');
-    if (calendar) {
-      // Use event delegation for click
-      calendar.addEventListener('click', (e) => {
-        const cell = this.findCellElement(e.target);
+    console.log('Setting up event listeners...');
+    
+    // Click events - listen on document
+    document.addEventListener('click', (e) => {
+      console.log('Document click at:', e.clientX, e.clientY);
+      
+      // Find element at click position
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      console.log('Clicked element:', element);
+      
+      if (element) {
+        const cell = this.findCellElement(element);
+        console.log('Found cell:', cell);
+        
         if (cell) {
           this.createBurst(cell);
         }
-      });
+      }
+    });
+    
+    // Mouse move events for hover detection - listen on document
+    document.addEventListener('mousemove', (e) => {
+      // Find element at mouse position
+      const element = document.elementFromPoint(e.clientX, e.clientY);
       
-      // Use mouseover and mouseout instead of mouseenter/mouseleave for event delegation
-      calendar.addEventListener('mouseover', (e) => {
-        const cell = this.findCellElement(e.target);
+      if (element) {
+        const cell = this.findCellElement(element);
+        
         if (cell && cell !== this.currentHoverCell) {
+          // Entering a new cell
           this.currentHoverCell = cell;
-          // Start generating hover particles immediately
           this.createHoverParticles(cell);
           this.lastHoverParticleTime = performance.now();
+        } else if (!cell && this.currentHoverCell) {
+          // Leaving all cells
+          this.currentHoverCell = null;
         }
-      });
-      
-      calendar.addEventListener('mouseout', (e) => {
-        const cell = this.findCellElement(e.target);
-        if (cell) {
-          // Check if the mouse is actually leaving the calendar or just moving to another cell
-          const relatedTarget = e.relatedTarget;
-          const relatedCell = relatedTarget ? this.findCellElement(relatedTarget) : null;
-          
-          if (!relatedCell || relatedCell !== cell) {
-            // Only clear if moving to a different cell or outside
-            if (this.currentHoverCell === cell) {
-              this.currentHoverCell = null;
-            }
-          }
-        }
-      });
-      
-      // Also listen for mouseleave on the entire calendar to clear hover
-      calendar.addEventListener('mouseleave', () => {
+      } else if (this.currentHoverCell) {
+        // No element found, clear hover
         this.currentHoverCell = null;
-      });
-    }
+      }
+    });
     
-    // Resize event
+    // Resize event with debounce
+    let resizeTimeout;
     window.addEventListener('resize', () => {
-      this.resizeCanvas();
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      resizeTimeout = setTimeout(() => {
+        this.resizeCanvas();
+      }, 100);
     });
     
     // Theme change event
@@ -325,11 +352,14 @@ const ParticleSystem = {
       for (const mutation of mutations) {
         if (mutation.attributeName === 'data-bs-theme') {
           // Theme changed, colors will be adjusted automatically in getColor
+          this.resizeCanvas();
         }
       }
     });
     
     observer.observe(document.documentElement, { attributes: true });
+    
+    console.log('Event listeners set up successfully');
   },
   
   // Take screenshot of calendar with particles
@@ -349,97 +379,61 @@ const ParticleSystem = {
     tempCtx.scale(scale, scale);
     
     // Fill with background color based on theme
-    tempCtx.fillStyle = this.isDarkMode() ? '#212529' : '#ffffff';
+    const bgColor = this.isDarkMode() ? '#212529' : '#ffffff';
+    tempCtx.fillStyle = bgColor;
     tempCtx.fillRect(0, 0, rect.width, rect.height);
     
-    // First, try to render the calendar table using SVG foreignObject
+    // Simple approach: since SVG foreignObject has issues with external styles,
+    // we'll create a styled version of the table
     try {
-      // Clone the table to avoid modifying the original
-      const tableClone = table.cloneNode(true);
+      // Get computed styles for the table
+      const tableStyle = window.getComputedStyle(table);
+      const tableBg = tableStyle.backgroundColor || bgColor;
+      const textColor = tableStyle.color || (this.isDarkMode() ? '#f8f9fa' : '#212529');
       
-      // Apply inline styles to ensure proper rendering
-      const style = document.createElement('style');
-      style.textContent = `
-        * { box-sizing: border-box; }
-        table { border-collapse: collapse; width: 100%; }
-        td { border: 1px solid; padding: 0.5rem; text-align: center; }
-        .table-active { background-color: rgba(0, 0, 0, 0.075); }
-        .table-danger { background-color: #f8d7da; }
-        .border-light { border-color: #f8f9fa !important; }
-        .border-dark { border-color: #212529 !important; }
-        .position-relative { position: relative; }
-        .badge { 
-          position: absolute; 
-          top: 0; 
-          right: 0; 
-          font-size: 0.65em; 
-          padding: 0.25em 0.5em; 
-          border-radius: 0 0 0 0.5em; 
-        }
-        .bg-secondary { background-color: #6c757d; color: white; }
-      `;
+      // Draw table background
+      tempCtx.fillStyle = tableBg;
+      tempCtx.fillRect(0, 0, rect.width, rect.height);
       
-      // Create a wrapper div for the table
-      const wrapper = document.createElement('div');
-      wrapper.style.width = rect.width + 'px';
-      wrapper.style.height = rect.height + 'px';
-      wrapper.style.backgroundColor = this.isDarkMode() ? '#212529' : '#ffffff';
-      wrapper.style.color = this.isDarkMode() ? '#f8f9fa' : '#212529';
-      wrapper.appendChild(style);
-      wrapper.appendChild(tableClone);
-      
-      // Serialize the HTML
-      const html = wrapper.outerHTML;
-      
-      // Create SVG with foreignObject
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}">
-          <foreignObject width="100%" height="100%">
-            <div xmlns="http://www.w3.org/1999/xhtml" style="margin:0;padding:0;">
-              ${html.replace(/"/g, '&quot;').replace(/#/g, '%23').replace(/\n/g, '')}
-            </div>
-          </foreignObject>
-        </svg>
-      `;
-      
-      // Create an image from the SVG
-      const img = new Image();
-      img.onload = () => {
-        // Draw the table image
-        tempCtx.drawImage(img, 0, 0);
-        
-        // Draw the particle canvas on top
+      // Draw the particle canvas on top
+      if (this.canvas && this.canvas.width > 0 && this.canvas.height > 0) {
         tempCtx.drawImage(this.canvas, 0, 0);
-        
-        // Convert to PNG and download
-        const dataURL = tempCanvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `calendar-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = dataURL;
-        link.click();
-      };
+      }
       
-      img.onerror = () => {
-        // Fallback: just draw particles on background
-        tempCtx.drawImage(this.canvas, 0, 0);
-        const dataURL = tempCanvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `calendar-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = dataURL;
-        link.click();
-      };
+      // Add a watermark or indicator
+      tempCtx.fillStyle = 'rgba(128, 128, 128, 0.3)';
+      tempCtx.font = '12px Arial';
+      tempCtx.fillText('Calendar with Particles', 10, rect.height - 10);
       
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      
-    } catch (error) {
-      console.error('Screenshot error:', error);
-      // Fallback: just draw particles on background
-      tempCtx.drawImage(this.canvas, 0, 0);
+      // Convert to PNG and download
       const dataURL = tempCanvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `calendar-${new Date().toISOString().split('T')[0]}.png`;
       link.href = dataURL;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      
+      console.log('Screenshot downloaded');
+      
+    } catch (error) {
+      console.error('Screenshot error:', error);
+      
+      // Fallback: just draw particles on background
+      tempCtx.fillStyle = bgColor;
+      tempCtx.fillRect(0, 0, rect.width, rect.height);
+      
+      if (this.canvas) {
+        tempCtx.drawImage(this.canvas, 0, 0);
+      }
+      
+      const dataURL = tempCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `calendar-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   }
 };
@@ -594,9 +588,12 @@ ready(() => {
   });
   
   // Screenshot functionality
-  document.getElementById('launch-screenshot-button').addEventListener('click', () => {
-    ParticleSystem.takeScreenshot();
-  });
+  const screenshotButton = document.getElementById('launch-screenshot-button');
+  if (screenshotButton) {
+    screenshotButton.addEventListener('click', () => {
+      ParticleSystem.takeScreenshot();
+    });
+  }
   
   // Print functionality
   let printModal = new bootstrap.Modal(document.getElementById('print-modal'));
@@ -629,6 +626,8 @@ ready(() => {
     });
   });
   
-  // Initialize Particle System
-  ParticleSystem.init();
+  // Initialize Particle System with a slight delay to ensure DOM is ready
+  setTimeout(() => {
+    ParticleSystem.init();
+  }, 100);
 });
