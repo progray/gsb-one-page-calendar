@@ -44,23 +44,34 @@ function initCalendarInteraction() {
   calendarState.modalOverlay.addEventListener('click', hideWeekInfoModal);
 }
 
+// Find month cells by month indices
+function findMonthCellsByMonthIndices(monthIndices) {
+  const monthCells = [];
+  document.querySelectorAll('.month').forEach(monthCell => {
+    const cellMonthIndex = parseInt(monthCell.dataset.month);
+    if (monthIndices.includes(cellMonthIndex)) {
+      monthCells.push(monthCell);
+    }
+  });
+  return monthCells;
+}
+
 // Handle week cell hover - cross highlighting
 function handleDayHover(event) {
   const dayCell = event.target;
   const dayRow = dayCell.parentNode;
-  const dayIndex = Array.from(dayRow.children).indexOf(dayCell);
   
   // Highlight the hovered week cell
   dayCell.classList.add('hover-highlight');
   
-  // Highlight related month cells (same column across month rows)
-  const monthRows = document.querySelectorAll('.months');
-  monthRows.forEach(row => {
-    const monthCell = row.children[dayIndex];
-    if (monthCell && monthCell.classList.contains('month')) {
+  // Highlight related month cells (using data-months attribute)
+  if (dayCell.dataset.months) {
+    const monthIndices = JSON.parse(dayCell.dataset.months);
+    const relatedMonthCells = findMonthCellsByMonthIndices(monthIndices);
+    relatedMonthCells.forEach(monthCell => {
       monthCell.classList.add('hover-highlight');
-    }
-  });
+    });
+  }
   
   // Highlight related date cells (same row)
   const dateCells = dayRow.querySelectorAll('.date');
@@ -73,19 +84,18 @@ function handleDayHover(event) {
 function handleDayHoverLeave(event) {
   const dayCell = event.target;
   const dayRow = dayCell.parentNode;
-  const dayIndex = Array.from(dayRow.children).indexOf(dayCell);
   
   // Remove highlight from week cell
   dayCell.classList.remove('hover-highlight');
   
-  // Remove highlight from month cells
-  const monthRows = document.querySelectorAll('.months');
-  monthRows.forEach(row => {
-    const monthCell = row.children[dayIndex];
-    if (monthCell && monthCell.classList.contains('month')) {
+  // Remove highlight from related month cells
+  if (dayCell.dataset.months) {
+    const monthIndices = JSON.parse(dayCell.dataset.months);
+    const relatedMonthCells = findMonthCellsByMonthIndices(monthIndices);
+    relatedMonthCells.forEach(monthCell => {
       monthCell.classList.remove('hover-highlight');
-    }
-  });
+    });
+  }
   
   // Remove highlight from date cells
   const dateCells = dayRow.querySelectorAll('.date');
@@ -124,10 +134,16 @@ function handleMonthClick(event) {
   calendarState.selectedElement = monthCell;
   monthCell.classList.add('selected');
   
-  // Find and pulse related week cells
+  // Find and highlight related week cells
   const monthIndex = parseInt(monthCell.dataset.month);
   const relatedWeekCells = findWeekCellsByMonth(monthIndex);
   
+  // Add selected class to related week cells
+  relatedWeekCells.forEach(weekCell => {
+    weekCell.classList.add('selected');
+  });
+  
+  // Pulse animation
   pulseWeekCells(relatedWeekCells);
 }
 
@@ -264,34 +280,25 @@ function showWeekInfoModal(dayCell) {
     });
   }
   
-  // Position modal near the clicked cell
-  const rect = dayCell.getBoundingClientRect();
+  // Position modal in center of screen
   const modal = calendarState.weekInfoModal;
   
-  // Calculate position - try to place to the right, if not enough space, to the left
-  let left = rect.right + 10;
-  let top = rect.top;
+  // Get modal dimensions (temporarily show to calculate)
+  modal.style.display = 'block';
+  modal.style.visibility = 'hidden';
   
-  // Adjust if modal would go off screen
-  const modalWidth = 400;
-  const modalHeight = 350;
+  const modalWidth = modal.offsetWidth || 400;
+  const modalHeight = modal.offsetHeight || 350;
   
-  if (left + modalWidth > window.innerWidth) {
-    left = rect.left - modalWidth - 10;
-  }
+  // Calculate center position
+  const left = (window.innerWidth - modalWidth) / 2;
+  const top = (window.innerHeight - modalHeight) / 2;
   
-  if (top + modalHeight > window.innerHeight) {
-    top = window.innerHeight - modalHeight - 20;
-  }
+  // Reset temporary styles
+  modal.style.display = '';
+  modal.style.visibility = '';
   
-  if (top < 20) {
-    top = 20;
-  }
-  
-  if (left < 20) {
-    left = 20;
-  }
-  
+  // Set position
   modal.style.left = left + 'px';
   modal.style.top = top + 'px';
   
