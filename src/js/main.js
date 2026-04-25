@@ -129,6 +129,179 @@ function toggleLightDarkClasses() {
   });
 }
 
+let selectedMonthElement = null;
+let selectedDateElement = null;
+
+function getMonthColumnIndex(monthElement) {
+  let parent = monthElement.parentElement;
+  let siblings = Array.from(parent.children);
+  let index = siblings.indexOf(monthElement) + 1;
+  return index;
+}
+
+function getDateRowIndex(dateElement) {
+  let row = dateElement.parentElement;
+  let allRows = Array.from(document.querySelectorAll('.days'));
+  return allRows.indexOf(row);
+}
+
+function highlightMonthColumn(monthElement, isHover) {
+  if (!monthElement || !monthElement.dataset.month) return;
+  
+  let monthIndex = monthElement.dataset.month;
+  let dayElements = document.querySelectorAll('.day');
+  
+  dayElements.forEach(day => {
+    if (day.dataset.months) {
+      let months = JSON.parse(day.dataset.months);
+      if (months.includes(parseInt(monthIndex))) {
+        if (isHover) {
+          day.classList.add('hover-month');
+        } else {
+          day.classList.add('selected-month');
+        }
+      }
+    }
+  });
+}
+
+function highlightDateRow(dateElement, isHover) {
+  if (!dateElement) return;
+  
+  let row = dateElement.parentElement;
+  let dayElements = row.querySelectorAll('.day');
+  
+  dayElements.forEach(day => {
+    if (isHover) {
+      day.classList.add('hover-date');
+    } else {
+      day.classList.add('selected-date');
+    }
+  });
+}
+
+function clearMonthHighlight(isHover) {
+  let dayElements = document.querySelectorAll('.day');
+  dayElements.forEach(day => {
+    if (isHover) {
+      day.classList.remove('hover-month');
+    } else {
+      day.classList.remove('selected-month');
+    }
+  });
+}
+
+function clearDateHighlight(isHover) {
+  let dayElements = document.querySelectorAll('.day');
+  dayElements.forEach(day => {
+    if (isHover) {
+      day.classList.remove('hover-date');
+    } else {
+      day.classList.remove('selected-date');
+    }
+  });
+}
+
+function clearIntersectionHighlight() {
+  let dayElements = document.querySelectorAll('.day');
+  dayElements.forEach(day => {
+    day.classList.remove('selected-intersection');
+  });
+}
+
+function updateHighlights() {
+  clearMonthHighlight(false);
+  clearDateHighlight(false);
+  clearIntersectionHighlight();
+  
+  if (selectedMonthElement && selectedDateElement) {
+    highlightIntersection(selectedMonthElement, selectedDateElement);
+  } else {
+    if (selectedMonthElement) {
+      highlightMonthColumn(selectedMonthElement, false);
+    }
+    if (selectedDateElement) {
+      highlightDateRow(selectedDateElement, false);
+    }
+  }
+}
+
+function highlightIntersection(monthElement, dateElement) {
+  if (!monthElement || !dateElement || !monthElement.dataset.month) return;
+  
+  let monthIndex = monthElement.dataset.month;
+  let row = dateElement.parentElement;
+  let dayElements = row.querySelectorAll('.day');
+  
+  dayElements.forEach(day => {
+    if (day.dataset.months) {
+      let months = JSON.parse(day.dataset.months);
+      if (months.includes(parseInt(monthIndex))) {
+        day.classList.add('selected-intersection');
+      }
+    }
+  });
+}
+
+function setupCalendarInteraction() {
+  document.querySelectorAll('.month').forEach(month => {
+    month.addEventListener('mouseenter', () => {
+      if (month.dataset.month !== undefined) {
+        highlightMonthColumn(month, true);
+      }
+    });
+    
+    month.addEventListener('mouseleave', () => {
+      clearMonthHighlight(true);
+    });
+    
+    month.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (month.dataset.month === undefined) return;
+      
+      if (selectedMonthElement === month) {
+        selectedMonthElement = null;
+        month.classList.remove('selected');
+      } else {
+        if (selectedMonthElement) {
+          selectedMonthElement.classList.remove('selected');
+        }
+        selectedMonthElement = month;
+        month.classList.add('selected');
+      }
+      
+      updateHighlights();
+    });
+  });
+  
+  document.querySelectorAll('.date').forEach(date => {
+    date.addEventListener('mouseenter', () => {
+      highlightDateRow(date, true);
+    });
+    
+    date.addEventListener('mouseleave', () => {
+      clearDateHighlight(true);
+    });
+    
+    date.addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      if (selectedDateElement === date) {
+        selectedDateElement = null;
+        date.classList.remove('selected');
+      } else {
+        if (selectedDateElement) {
+          selectedDateElement.classList.remove('selected');
+        }
+        selectedDateElement = date;
+        date.classList.add('selected');
+      }
+      
+      updateHighlights();
+    });
+  });
+}
+
 
 
 ready(() => {
@@ -171,6 +344,8 @@ ready(() => {
   // Main functionality
   moment.locale(window.navigator.language);
   populateCalendar();
+  // Setup calendar interaction
+  setupCalendarInteraction();
   // Tooltips
   [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).map(element => {
     new bootstrap.Tooltip(element, {

@@ -36,6 +36,81 @@ html[data-bs-theme="dark"] #bottom-credits img {
   filter: invert(1);
 }
 
+.month, .date {
+  cursor: pointer;
+  user-select: none;
+}
+
+.month:hover, .date:hover {
+  background-color: rgba(13, 202, 240, 0.1);
+}
+
+.month.selected {
+  background-color: rgba(13, 202, 240, 0.3);
+  font-weight: bold;
+}
+
+.date.selected {
+  background-color: rgba(255, 193, 7, 0.3);
+  font-weight: bold;
+}
+
+.day.hover-month {
+  background-color: rgba(13, 202, 240, 0.15) !important;
+}
+
+.day.hover-date {
+  background-color: rgba(255, 193, 7, 0.15) !important;
+}
+
+.day.selected-month {
+  background-color: rgba(13, 202, 240, 0.4) !important;
+}
+
+.day.selected-date {
+  background-color: rgba(255, 193, 7, 0.4) !important;
+}
+
+.day.selected-intersection {
+  background-color: rgba(220, 53, 69, 0.6) !important;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+html[data-bs-theme="light"] .month:hover,
+html[data-bs-theme="light"] .date:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+html[data-bs-theme="light"] .month.selected {
+  background-color: rgba(13, 110, 253, 0.3);
+}
+
+html[data-bs-theme="light"] .date.selected {
+  background-color: rgba(255, 193, 7, 0.4);
+}
+
+html[data-bs-theme="light"] .day.hover-month {
+  background-color: rgba(13, 110, 253, 0.15) !important;
+}
+
+html[data-bs-theme="light"] .day.hover-date {
+  background-color: rgba(255, 193, 7, 0.2) !important;
+}
+
+html[data-bs-theme="light"] .day.selected-month {
+  background-color: rgba(13, 110, 253, 0.4) !important;
+}
+
+html[data-bs-theme="light"] .day.selected-date {
+  background-color: rgba(255, 193, 7, 0.5) !important;
+}
+
+html[data-bs-theme="light"] .day.selected-intersection {
+  background-color: rgba(220, 53, 69, 0.7) !important;
+  color: #fff !important;
+}
+
 .badge {
   top: 0;
   right: 0;
