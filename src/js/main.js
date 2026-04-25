@@ -14,14 +14,38 @@ function getYearFromUrl() {
   return null;
 }
 
-function updateUrlWithYear(year) {
+function updateUrlWithYear(year, addToHistory = true) {
   const url = new URL(window.location.href);
   if (year === moment().year()) {
     url.searchParams.delete('year');
   } else {
     url.searchParams.set('year', year);
   }
-  window.history.replaceState({ year: year }, '', url.toString());
+  const state = { year: year };
+  if (addToHistory) {
+    window.history.pushState(state, '', url.toString());
+  } else {
+    window.history.replaceState(state, '', url.toString());
+  }
+}
+
+function handlePopState(event) {
+  let newYear;
+  if (event.state && event.state.year !== undefined) {
+    const yearFromState = parseInt(event.state.year, 10);
+    if (!isNaN(yearFromState) && yearFromState > 0 && yearFromState < 10000) {
+      newYear = yearFromState;
+    }
+  }
+  
+  if (newYear === undefined) {
+    newYear = getYearFromUrl() || moment().year();
+  }
+  
+  if (newYear !== currentYear) {
+    currentYear = newYear;
+    populateCalendar();
+  }
 }
 
 function changeYear(year) {
@@ -67,9 +91,14 @@ function setupYearControls() {
       yearInput.select();
     });
 
+    const isValidYearInput = (value) => {
+      const year = parseInt(value, 10);
+      return !isNaN(year) && year >= 1 && year <= 9999;
+    };
+
     const confirmYearInput = () => {
       const newYear = parseInt(yearInput.value, 10);
-      if (!isNaN(newYear) && newYear > 0 && newYear < 10000) {
+      if (isValidYearInput(yearInput.value)) {
         changeYear(newYear);
       }
       yearDisplay.classList.remove('d-none');
@@ -83,7 +112,27 @@ function setupYearControls() {
       } else if (e.key === 'Escape') {
         yearDisplay.classList.remove('d-none');
         yearInput.classList.add('d-none');
+      } else if (e.key === 'Backspace' || e.key === 'Delete' || 
+                 e.key === 'ArrowLeft' || e.key === 'ArrowRight' ||
+                 e.key === 'Tab' || e.key === 'Home' || e.key === 'End') {
+        return;
+      } else if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'a' || e.key === 'c' || e.key === 'v' || e.key === 'x') {
+          return;
+        }
+      } else if (!/^\d$/.test(e.key)) {
+        e.preventDefault();
+      } else if (yearInput.value.length >= 4 && !yearInput.selectionStart) {
+        e.preventDefault();
       }
+    });
+
+    yearInput.addEventListener('input', () => {
+      let value = yearInput.value.replace(/[^0-9]/g, '');
+      if (value.length > 4) {
+        value = value.slice(0, 4);
+      }
+      yearInput.value = value;
     });
 
     yearInput.addEventListener('blur', confirmYearInput);
@@ -182,7 +231,15 @@ function populateCalendar() {
     });
   }
 
-  document.getElementById('date').textContent = now.format('LL');
+  const dateElement = document.getElementById('date');
+  if (dateElement) {
+    if (isCurrentYear) {
+      dateElement.textContent = now.format('LL');
+      dateElement.classList.remove('d-none');
+    } else {
+      dateElement.classList.add('d-none');
+    }
+  }
   
   const yearElement = document.getElementById('year');
   if (yearElement) {
@@ -305,6 +362,8 @@ ready(() => {
   });
   // Main functionality
   moment.locale(window.navigator.language);
+  window.addEventListener('popstate', handlePopState);
+  window.history.replaceState({ year: currentYear }, '', window.location.href);
   setupYearControls();
   populateCalendar();
   // Tooltips
