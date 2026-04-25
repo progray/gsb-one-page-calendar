@@ -501,104 +501,215 @@ class DrawingManager {
     topButtons.style.display = 'none';
     bottomCredits.style.display = 'none';
     
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
     try {
       const table = document.getElementById('one-page-calendar');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
+      const container = this.container;
       const scale = 2;
-      const rect = this.container.getBoundingClientRect();
+      const rect = container.getBoundingClientRect();
       
-      canvas.width = rect.width * scale;
-      canvas.height = rect.height * scale;
+      const exportCanvas = document.createElement('canvas');
+      const ctx = exportCanvas.getContext('2d');
+      
+      exportCanvas.width = rect.width * scale;
+      exportCanvas.height = rect.height * scale;
       
       ctx.scale(scale, scale);
       
-      ctx.fillStyle = this.isDarkMode ? '#212529' : '#ffffff';
+      const bgColor = this.isDarkMode ? '#212529' : '#ffffff';
+      ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, rect.width, rect.height);
       
       const tableHtml = table.outerHTML;
-      const styles = Array.from(document.styleSheets)
-        .map(sheet => {
-          try {
-            return Array.from(sheet.cssRules)
-              .map(rule => rule.cssText)
-              .join('\n');
-          } catch (e) {
-            return '';
-          }
-        })
-        .join('\n');
       
-      const data = `
+      const inlineStyles = this.collectInlineStyles(table);
+      
+      const svgContent = `
         <svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}">
+          <rect width="100%" height="100%" fill="${bgColor}"/>
           <foreignObject width="100%" height="100%">
-            <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;">
-              <style>${styles}</style>
+            <div xmlns="http://www.w3.org/1999/xhtml" style="width:${rect.width}px;height:${rect.height}px;margin:0;padding:0;background:${bgColor};">
+              <style>
+                ${this.getExportStyles()}
+              </style>
               ${tableHtml}
             </div>
           </foreignObject>
         </svg>
       `;
       
-      const img = new Image();
-      const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
+      const result = await this.tryRenderSVG(svgContent, rect, ctx);
       
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0);
-        
-        ctx.drawImage(this.canvas, 0, 0);
-        
-        const link = document.createElement('a');
-        link.download = `calendar-${new Date().toISOString().slice(0, 10)}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        
-        URL.revokeObjectURL(url);
-        
-        toolbar.style.display = '';
-        topButtons.style.display = '';
-        bottomCredits.style.display = '';
-      };
+      if (!result) {
+        console.log('SVG render failed, trying alternative method...');
+        await this.renderTableToCanvas(ctx, table, rect);
+      }
       
-      img.onerror = () => {
-        this.exportAsSimplePNG(ctx, rect, scale);
-        
-        toolbar.style.display = '';
-        topButtons.style.display = '';
-        bottomCredits.style.display = '';
-      };
+      ctx.drawImage(this.canvas, 0, 0);
       
-      img.src = url;
+      const link = document.createElement('a');
+      link.download = `calendar-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = exportCanvas.toDataURL('image/png');
+      link.click();
       
     } catch (e) {
       console.error('Export failed:', e);
-      
+      alert('Export failed. Please try again.');
+    } finally {
       toolbar.style.display = '';
       topButtons.style.display = '';
       bottomCredits.style.display = '';
-      
-      alert('Export failed. Please try again.');
     }
   }
   
-  exportAsSimplePNG(ctx, rect, scale) {
-    ctx.fillStyle = this.isDarkMode ? '#212529' : '#ffffff';
-    ctx.fillRect(0, 0, rect.width, rect.height);
+  getExportStyles() {
+    const textColor = this.isDarkMode ? '#ffffff' : '#000000';
+    const borderColor = this.isDarkMode ? '#495057' : '#dee2e6';
+    const activeBg = this.isDarkMode ? '#444444' : '#e9ecef';
+    const dangerBg = this.isDarkMode ? '#422' : '#f8d7da';
+    const dangerText = this.isDarkMode ? '#f8f9fa' : '#721c24';
     
-    ctx.font = '16px sans-serif';
-    ctx.fillStyle = this.isDarkMode ? '#ffffff' : '#000000';
-    ctx.fillText('Calendar (drawing only)', 10, 30);
+    return `
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 14px;
+        color: ${textColor};
+      }
+      td {
+        border: 1px solid ${borderColor};
+        padding: 4px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .table-active {
+        background-color: ${activeBg};
+      }
+      .table-danger {
+        background-color: ${dangerBg};
+        color: ${dangerText};
+      }
+      .month {
+        position: relative;
+      }
+      .badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-size: 10px;
+        padding: 2px 6px;
+        background-color: #6c757d;
+        color: white;
+        border-radius: 0 0 0 6px;
+      }
+      .date {
+        font-weight: bold;
+      }
+      #date {
+        font-size: 18px;
+        margin: 0;
+      }
+    `;
+  }
+  
+  collectInlineStyles(element) {
+    const styles = [];
+    const computed = window.getComputedStyle(element);
     
-    ctx.drawImage(this.canvas, 0, 0);
+    for (let i = 0; i < computed.length; i++) {
+      const prop = computed[i];
+      styles.push(`${prop}: ${computed.getPropertyValue(prop)}`);
+    }
     
-    const link = document.createElement('a');
-    link.download = `calendar-${new Date().toISOString().slice(0, 10)}.png`;
-    link.href = ctx.canvas.toDataURL('image/png');
-    link.click();
+    return styles.join('; ');
+  }
+  
+  async tryRenderSVG(svgContent, rect, ctx) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(url);
+        resolve(false);
+      }, 5000);
+      
+      img.onload = () => {
+        clearTimeout(timeout);
+        try {
+          ctx.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+          resolve(true);
+        } catch (e) {
+          console.error('Error drawing image:', e);
+          URL.revokeObjectURL(url);
+          resolve(false);
+        }
+      };
+      
+      img.onerror = (err) => {
+        clearTimeout(timeout);
+        console.error('SVG image error:', err);
+        URL.revokeObjectURL(url);
+        resolve(false);
+      };
+      
+      img.src = url;
+    });
+  }
+  
+  async renderTableToCanvas(ctx, table, rect) {
+    const rows = table.rows;
+    const rowCount = rows.length;
+    const colCount = rows[0] ? rows[0].cells.length : 0;
+    
+    if (rowCount === 0 || colCount === 0) return;
+    
+    const cellWidth = rect.width / colCount;
+    const cellHeight = rect.height / rowCount;
+    
+    const textColor = this.isDarkMode ? '#ffffff' : '#000000';
+    const borderColor = this.isDarkMode ? '#495057' : '#dee2e6';
+    const activeBg = this.isDarkMode ? '#444444' : '#e9ecef';
+    const dangerBg = this.isDarkMode ? '#422' : '#f8d7da';
+    
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    
+    for (let r = 0; r < rowCount; r++) {
+      const row = rows[r];
+      
+      for (let c = 0; c < colCount; c++) {
+        const cell = row.cells[c];
+        if (!cell) continue;
+        
+        const x = c * cellWidth;
+        const y = r * cellHeight;
+        const w = cellWidth;
+        const h = cellHeight;
+        
+        if (cell.classList.contains('table-active')) {
+          ctx.fillStyle = activeBg;
+          ctx.fillRect(x, y, w, h);
+        } else if (cell.classList.contains('table-danger')) {
+          ctx.fillStyle = dangerBg;
+          ctx.fillRect(x, y, w, h);
+        }
+        
+        ctx.strokeRect(x, y, w, h);
+        
+        const textContent = cell.textContent.trim();
+        if (textContent) {
+          ctx.fillStyle = textColor;
+          ctx.fillText(textContent, x + w / 2, y + h / 2);
+        }
+      }
+    }
   }
 }
 
