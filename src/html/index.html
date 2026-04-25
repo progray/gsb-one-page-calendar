@@ -26,6 +26,12 @@
           <i class="bi bi-sun-fill"></i>
         </button>
       </div>
+      <div id="launch-screenshot-button-container" class="btn-group me-2">
+        <button id="launch-screenshot-button" class="btn btn-outline-light rounded-circle" data-bs-toggle="tooltip"
+          title="Take a screenshot with particles">
+          <i class="bi bi-camera-fill"></i>
+        </button>
+      </div>
       <div id="launch-print-modal-button-container" class="btn-group me-2">
         <button id="launch-print-modal-button" class="btn btn-outline-light rounded-circle" data-bs-toggle="tooltip"
           title="Print the calendar">
@@ -45,7 +51,8 @@
         </a>
       </div>
     </div>
-    <div id="one-page-calendar-container" class="container-md table-responsive my-2 p-0">
+    <div id="one-page-calendar-container" class="container-md table-responsive my-2 p-0 position-relative">
+      <canvas id="particle-canvas" class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none"></canvas>
       <table id="one-page-calendar" class="table table-bordered align-middle text-center border-light">
         <tbody>
           <tr class="months">
