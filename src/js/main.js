@@ -104,18 +104,32 @@ function updateCalendarShadow(rotateX, rotateY) {
   calendar.style.boxShadow = `${shadowOffsetX}px ${shadowOffsetY}px ${shadowBlur}px rgba(0, 0, 0, ${0.3 + Math.abs(rotateX) / 100 + Math.abs(rotateY) / 100})`;
 }
 
+// Extract pure text content (excluding badge for month cells)
+function extractCellText(cell) {
+  let text = '';
+  const clone = cell.cloneNode(true);
+  
+  // Remove badge elements if any
+  const badges = clone.querySelectorAll('.badge');
+  badges.forEach(badge => badge.remove());
+  
+  text = clone.textContent.trim();
+  return text || cell.textContent.trim();
+}
+
 // Setup cell for flip animation
 function setupCellForFlip(cell) {
   // Check if already set up
   if (cell.querySelector('.flipper')) return;
   
   const originalContent = cell.innerHTML;
-  const textContent = cell.textContent.trim();
+  const pureText = extractCellText(cell);
   
   // Clear cell and create flipper structure
   cell.innerHTML = '';
   cell.style.perspective = '1000px';
   cell.style.position = 'relative';
+  cell.style.overflow = 'visible';
   cell.style.minHeight = cell.offsetHeight + 'px';
   
   const flipper = document.createElement('div');
@@ -123,14 +137,19 @@ function setupCellForFlip(cell) {
   flipper.style.width = '100%';
   flipper.style.height = '100%';
   flipper.style.position = 'relative';
+  flipper.style.transformStyle = 'preserve-3d';
   
   const front = document.createElement('div');
   front.className = 'front';
   front.innerHTML = originalContent;
+  front.style.backfaceVisibility = 'hidden';
+  front.style.WebkitBackfaceVisibility = 'hidden';
   
   const back = document.createElement('div');
   back.className = 'back';
-  back.innerHTML = originalContent;
+  back.textContent = pureText;
+  back.style.backfaceVisibility = 'hidden';
+  back.style.WebkitBackfaceVisibility = 'hidden';
   
   flipper.appendChild(front);
   flipper.appendChild(back);
@@ -169,7 +188,7 @@ function toggleCellFlip(cell) {
       
       // Set auto-flip timer
       startAutoFlipBackTimer(cellId, cell);
-    }, 300);
+    }, 200);
   }
 }
 
