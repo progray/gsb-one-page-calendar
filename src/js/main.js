@@ -1,5 +1,274 @@
 /*global moment, bootstrap*/
 
+// 3D Interaction Variables
+let isIn3DMode = false;
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 400; // 400ms
+const MAX_TILT_ANGLE = 25; // 25 degrees
+let calendarCenterX = 0;
+let calendarCenterY = 0;
+let currentRotateX = 0;
+let currentRotateY = 0;
+let flippedCells = new Map();
+let autoFlipBackTimers = new Map();
+const AUTO_FLIP_BACK_DELAY = 5000; // 5 seconds
+
+// Calculate calendar center
+function calculateCalendarCenter() {
+  const calendar = document.getElementById('one-page-calendar');
+  const rect = calendar.getBoundingClientRect();
+  calendarCenterX = rect.left + rect.width / 2;
+  calendarCenterY = rect.top + rect.height / 2;
+}
+
+// Enter 3D Mode
+function enter3DMode() {
+  if (isIn3DMode) return;
+  isIn3DMode = true;
+  const calendar = document.getElementById('one-page-calendar');
+  calendar.classList.add('in-3d-mode');
+  calendar.classList.remove('smooth-transition');
+  calculateCalendarCenter();
+  currentRotateX = 0;
+  currentRotateY = 0;
+  document.body.style.cursor = 'grabbing';
+}
+
+// Exit 3D Mode with bounce back animation
+function exit3DMode() {
+  if (!isIn3DMode) return;
+  isIn3DMode = false;
+  const calendar = document.getElementById('one-page-calendar');
+  calendar.classList.remove('in-3d-mode');
+  
+  // Save current transform for animation
+  calendar.style.setProperty('--current-transform', `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`);
+  
+  // Add smooth transition class
+  calendar.classList.add('smooth-transition');
+  
+  // Reset rotation with elastic animation
+  calendar.style.transform = 'rotateX(0deg) rotateY(0deg)';
+  
+  // Reset shadow
+  updateCalendarShadow(0, 0);
+  
+  document.body.style.cursor = 'default';
+  
+  // Clean up after animation
+  setTimeout(() => {
+    calendar.classList.remove('smooth-transition');
+    calendar.style.removeProperty('--current-transform');
+  }, 600);
+  
+  currentRotateX = 0;
+  currentRotateY = 0;
+}
+
+// Update calendar rotation based on mouse position
+function updateCalendarRotation(mouseX, mouseY) {
+  if (!isIn3DMode) return;
+  
+  const deltaX = mouseX - calendarCenterX;
+  const deltaY = mouseY - calendarCenterY;
+  
+  const calendar = document.getElementById('one-page-calendar');
+  const rect = calendar.getBoundingClientRect();
+  
+  // Calculate rotation angles proportional to mouse offset
+  const rotateY = (deltaX / (rect.width / 2)) * MAX_TILT_ANGLE;
+  const rotateX = -(deltaY / (rect.height / 2)) * MAX_TILT_ANGLE;
+  
+  // Clamp angles to max tilt
+  currentRotateX = Math.max(-MAX_TILT_ANGLE, Math.min(MAX_TILT_ANGLE, rotateX));
+  currentRotateY = Math.max(-MAX_TILT_ANGLE, Math.min(MAX_TILT_ANGLE, rotateY));
+  
+  // Apply transform
+  calendar.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+  
+  // Update shadow based on rotation
+  updateCalendarShadow(currentRotateX, currentRotateY);
+}
+
+// Update calendar shadow based on rotation
+function updateCalendarShadow(rotateX, rotateY) {
+  const calendar = document.getElementById('one-page-calendar');
+  
+  // Calculate shadow offset based on rotation
+  // When rotateY is positive (right side closer), shadow should be on the left
+  // When rotateX is positive (bottom closer), shadow should be on top
+  const shadowOffsetX = -rotateY * 1.5;
+  const shadowOffsetY = -rotateX * 1.5 + 10;
+  const shadowBlur = 30 + Math.abs(rotateX) + Math.abs(rotateY);
+  
+  calendar.style.boxShadow = `${shadowOffsetX}px ${shadowOffsetY}px ${shadowBlur}px rgba(0, 0, 0, ${0.3 + Math.abs(rotateX) / 100 + Math.abs(rotateY) / 100})`;
+}
+
+// Setup cell for flip animation
+function setupCellForFlip(cell) {
+  // Check if already set up
+  if (cell.querySelector('.flipper')) return;
+  
+  const originalContent = cell.innerHTML;
+  const textContent = cell.textContent.trim();
+  
+  // Clear cell and create flipper structure
+  cell.innerHTML = '';
+  cell.style.perspective = '1000px';
+  cell.style.position = 'relative';
+  cell.style.minHeight = cell.offsetHeight + 'px';
+  
+  const flipper = document.createElement('div');
+  flipper.className = 'flipper';
+  flipper.style.width = '100%';
+  flipper.style.height = '100%';
+  flipper.style.position = 'relative';
+  
+  const front = document.createElement('div');
+  front.className = 'front';
+  front.innerHTML = originalContent;
+  
+  const back = document.createElement('div');
+  back.className = 'back';
+  back.innerHTML = originalContent;
+  
+  flipper.appendChild(front);
+  flipper.appendChild(back);
+  cell.appendChild(flipper);
+  
+  // Store reference
+  cell.dataset.flipperSetUp = 'true';
+}
+
+// Toggle cell flip
+function toggleCellFlip(cell) {
+  setupCellForFlip(cell);
+  
+  const flipper = cell.querySelector('.flipper');
+  const cellId = getCellUniqueId(cell);
+  
+  if (flipper.classList.contains('flipped')) {
+    // Flip back
+    flipper.classList.remove('flipped');
+    cell.classList.remove('glowing');
+    flippedCells.delete(cellId);
+    
+    // Clear auto-flip timer
+    if (autoFlipBackTimers.has(cellId)) {
+      clearTimeout(autoFlipBackTimers.get(cellId));
+      autoFlipBackTimers.delete(cellId);
+    }
+  } else {
+    // Add glow effect first
+    cell.classList.add('glowing');
+    
+    // Flip after a short delay for glow effect to be visible
+    setTimeout(() => {
+      flipper.classList.add('flipped');
+      flippedCells.set(cellId, cell);
+      
+      // Set auto-flip timer
+      startAutoFlipBackTimer(cellId, cell);
+    }, 300);
+  }
+}
+
+// Get unique ID for cell
+function getCellUniqueId(cell) {
+  if (cell.dataset.cellId) return cell.dataset.cellId;
+  
+  const cellId = 'cell_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  cell.dataset.cellId = cellId;
+  return cellId;
+}
+
+// Start auto flip back timer
+function startAutoFlipBackTimer(cellId, cell) {
+  // Clear existing timer if any
+  if (autoFlipBackTimers.has(cellId)) {
+    clearTimeout(autoFlipBackTimers.get(cellId));
+  }
+  
+  const timer = setTimeout(() => {
+    if (isIn3DMode) {
+      // If still in 3D mode, delay a bit more
+      startAutoFlipBackTimer(cellId, cell);
+      return;
+    }
+    
+    const flipper = cell.querySelector('.flipper');
+    if (flipper && flipper.classList.contains('flipped')) {
+      flipper.classList.remove('flipped');
+      cell.classList.remove('glowing');
+      flippedCells.delete(cellId);
+    }
+    autoFlipBackTimers.delete(cellId);
+  }, AUTO_FLIP_BACK_DELAY);
+  
+  autoFlipBackTimers.set(cellId, timer);
+}
+
+// Long press handlers
+function startLongPressTimer(e) {
+  if (longPressTimer) clearTimeout(longPressTimer);
+  
+  longPressTimer = setTimeout(() => {
+    enter3DMode();
+  }, LONG_PRESS_DURATION);
+}
+
+function cancelLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+// Mouse move handler for 3D rotation
+function handleMouseMove(e) {
+  if (isIn3DMode) {
+    updateCalendarRotation(e.clientX, e.clientY);
+  }
+}
+
+// Mouse up handler
+function handleMouseUp(e) {
+  if (longPressTimer) {
+    cancelLongPressTimer();
+    // If it was a short press (click), check if clicked on a cell
+    const cell = e.target.closest('.month, .day, .date');
+    if (cell && !isIn3DMode) {
+      toggleCellFlip(cell);
+    }
+  }
+  
+  if (isIn3DMode) {
+    exit3DMode();
+  }
+}
+
+// Touch handlers for mobile
+function handleTouchStart(e) {
+  if (e.touches.length === 1) {
+    const touch = e.touches[0];
+    startLongPressTimer({ clientX: touch.clientX, clientY: touch.clientY });
+  }
+}
+
+function handleTouchMove(e) {
+  if (isIn3DMode && e.touches.length === 1) {
+    const touch = e.touches[0];
+    updateCalendarRotation(touch.clientX, touch.clientY);
+  } else if (!isIn3DMode) {
+    // Cancel long press if touch moves
+    cancelLongPressTimer();
+  }
+}
+
+function handleTouchEnd(e) {
+  handleMouseUp({});
+}
+
 // Custom $(document).ready() function
 function ready(fn) {
   if (document.readyState != 'loading') {
@@ -177,5 +446,47 @@ ready(() => {
       customClass: 'd-print-none',
       trigger: 'hover'
     });
+  });
+  
+  // 3D Interaction Event Listeners
+  const calendarContainer = document.getElementById('one-page-calendar-container');
+  const calendar = document.getElementById('one-page-calendar');
+  
+  // Mouse events for 3D mode
+  calendarContainer.addEventListener('mousedown', (e) => {
+    // Only trigger 3D mode if clicking on calendar area, not on buttons
+    if (e.target.closest('#one-page-calendar')) {
+      startLongPressTimer(e);
+    }
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    handleMouseMove(e);
+    
+    // Cancel long press if mouse moves too much before 400ms
+    if (!isIn3DMode && longPressTimer) {
+      cancelLongPressTimer();
+    }
+  });
+  
+  document.addEventListener('mouseup', handleMouseUp);
+  
+  // Prevent context menu on long press
+  calendarContainer.addEventListener('contextmenu', (e) => {
+    if (isIn3DMode || longPressTimer) {
+      e.preventDefault();
+    }
+  });
+  
+  // Touch events for mobile
+  calendarContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+  document.addEventListener('touchmove', handleTouchMove, { passive: true });
+  document.addEventListener('touchend', handleTouchEnd);
+  
+  // Recalculate center on resize
+  window.addEventListener('resize', () => {
+    if (isIn3DMode) {
+      calculateCalendarCenter();
+    }
   });
 });
