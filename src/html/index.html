@@ -15,7 +15,17 @@
 
 <body class="h-100">
   <div class="h-100 container-fluid d-flex flex-column justify-content-between align-items-center">
-    <div id="top-buttons" class="button-toolbar justify-self-start align-self-end mt-2 d-print-none">
+    <div id="year-nav" class="w-100 d-flex justify-content-center align-items-center mt-2 d-print-none">
+      <button id="year-prev" class="btn btn-link px-2 py-0 text-decoration-none year-nav-btn" type="button">
+        <span>&lsaquo;</span>
+      </button>
+      <span id="year-display" class="h3 m-0 mx-2 year-display"></span>
+      <input id="year-input" type="text" class="d-none h3 m-0 mx-2 year-input" inputmode="numeric" pattern="[0-9]*">
+      <button id="year-next" class="btn btn-link px-2 py-0 text-decoration-none year-nav-btn" type="button">
+        <span>&rsaquo;</span>
+      </button>
+    </div>
+    <div id="top-buttons" class="button-toolbar justify-self-start align-self-end mt-1 d-print-none">
       <div class="btn-group me-2">
         <button id="darkmode-button" class="btn btn-outline-light rounded-circle d-none" data-bs-theme-value="dark"
           data-bs-toggle="tooltip" title="Enable Dark Mode">
