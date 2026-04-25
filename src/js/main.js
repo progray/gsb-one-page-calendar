@@ -9,9 +9,6 @@ let calendarCenterX = 0;
 let calendarCenterY = 0;
 let currentRotateX = 0;
 let currentRotateY = 0;
-let flippedCells = new Map();
-let autoFlipBackTimers = new Map();
-const AUTO_FLIP_BACK_DELAY = 5000; // 5 seconds
 
 // Calculate calendar center
 function calculateCalendarCenter() {
@@ -164,67 +161,18 @@ function toggleCellFlip(cell) {
   setupCellForFlip(cell);
   
   const flipper = cell.querySelector('.flipper');
-  const cellId = getCellUniqueId(cell);
   
   if (flipper.classList.contains('flipped')) {
-    // Flip back
+    // Flip back to front
     flipper.classList.remove('flipped');
     cell.classList.remove('glowing');
-    flippedCells.delete(cellId);
-    
-    // Clear auto-flip timer
-    if (autoFlipBackTimers.has(cellId)) {
-      clearTimeout(autoFlipBackTimers.get(cellId));
-      autoFlipBackTimers.delete(cellId);
-    }
   } else {
-    // Add glow effect first
+    // Flip to back - add glow effect and flip
     cell.classList.add('glowing');
     
-    // Flip after a short delay for glow effect to be visible
-    setTimeout(() => {
-      flipper.classList.add('flipped');
-      flippedCells.set(cellId, cell);
-      
-      // Set auto-flip timer
-      startAutoFlipBackTimer(cellId, cell);
-    }, 200);
+    // Flip immediately (glow effect starts immediately)
+    flipper.classList.add('flipped');
   }
-}
-
-// Get unique ID for cell
-function getCellUniqueId(cell) {
-  if (cell.dataset.cellId) return cell.dataset.cellId;
-  
-  const cellId = 'cell_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  cell.dataset.cellId = cellId;
-  return cellId;
-}
-
-// Start auto flip back timer
-function startAutoFlipBackTimer(cellId, cell) {
-  // Clear existing timer if any
-  if (autoFlipBackTimers.has(cellId)) {
-    clearTimeout(autoFlipBackTimers.get(cellId));
-  }
-  
-  const timer = setTimeout(() => {
-    if (isIn3DMode) {
-      // If still in 3D mode, delay a bit more
-      startAutoFlipBackTimer(cellId, cell);
-      return;
-    }
-    
-    const flipper = cell.querySelector('.flipper');
-    if (flipper && flipper.classList.contains('flipped')) {
-      flipper.classList.remove('flipped');
-      cell.classList.remove('glowing');
-      flippedCells.delete(cellId);
-    }
-    autoFlipBackTimers.delete(cellId);
-  }, AUTO_FLIP_BACK_DELAY);
-  
-  autoFlipBackTimers.set(cellId, timer);
 }
 
 // Long press handlers
