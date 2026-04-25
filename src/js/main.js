@@ -360,9 +360,17 @@ function openNoteEditor(dayElement, existingNoteKey = null) {
     currentEditorTag = note.tag;
     editor.dataset.noteKey = existingNoteKey;
   } else {
-    textarea.value = '';
-    currentEditorTag = 'red';
-    delete editor.dataset.noteKey;
+    const cellNotes = getNotesForCell(dayElement);
+    if (cellNotes.length > 0) {
+      const latestNote = cellNotes[0];
+      textarea.value = latestNote.content;
+      currentEditorTag = latestNote.tag;
+      editor.dataset.noteKey = latestNote.key;
+    } else {
+      textarea.value = '';
+      currentEditorTag = 'red';
+      delete editor.dataset.noteKey;
+    }
   }
   
   updateTagButtons();
