@@ -54,6 +54,161 @@ html[data-bs-theme="dark"] #bottom-credits img {
   }
 }
 
+/* 3D Transform Styles */
+#one-page-calendar-container {
+  perspective: 1000px;
+  transition: transform 0.1s ease-out;
+}
+
+#one-page-calendar {
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease-out;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+#one-page-calendar.in-3d-mode {
+  box-shadow: 20px 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Cell 3D Flip Styles */
+.month, .day, .date {
+  transform-style: preserve-3d;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.month:hover, .day:hover, .date:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Glow Effect - Border Only */
+.glowing {
+  position: relative;
+  overflow: visible;
+}
+
+.glowing::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff, #00ffff);
+  background-size: 300% 100%;
+  border-radius: 4px;
+  z-index: -1;
+  animation: glowBorderFlow 1.5s linear infinite;
+}
+
+.glowing::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  border-radius: 2px;
+  z-index: 0;
+}
+
+@keyframes glowBorderFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Flip Animation */
+.flipper {
+  transform-style: preserve-3d;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.flipper.flipped {
+  transform: rotateY(180deg);
+}
+
+.front, .back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.front {
+  z-index: 2;
+  transform: rotateY(0deg);
+  background: inherit;
+}
+
+.back {
+  transform: rotateY(180deg);
+  z-index: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 4px;
+}
+
+/* Bounce Back Animation */
+@keyframes bounceBack {
+  0% {
+    transform: var(--current-transform);
+  }
+  20% {
+    transform: scale(0.95) var(--current-transform);
+  }
+  40% {
+    transform: scale(1.05) var(--current-transform);
+  }
+  60% {
+    transform: scale(0.98) var(--current-transform);
+  }
+  80% {
+    transform: scale(1.01) var(--current-transform);
+  }
+  100% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+}
+
+.bounce-back {
+  animation: bounceBack 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Smooth Rotation Transition */
+.smooth-transition {
+  transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.6s ease;
+}
+
+/* Press Feedback */
+.month:active, .day:active, .date:active {
+  transform: scale(0.98);
+}
+
+/* Dynamic Shadow Variables */
+:root {
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 10px;
+  --shadow-blur: 30px;
+}
+
 @media print {
 
   table,
