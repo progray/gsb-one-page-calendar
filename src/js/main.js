@@ -1,5 +1,95 @@
 /*global moment, bootstrap*/
 
+let currentYear = getYearFromUrl() || moment().year();
+
+function getYearFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const yearParam = urlParams.get('year');
+  if (yearParam) {
+    const year = parseInt(yearParam, 10);
+    if (!isNaN(year) && year > 0 && year < 10000) {
+      return year;
+    }
+  }
+  return null;
+}
+
+function updateUrlWithYear(year) {
+  const url = new URL(window.location.href);
+  if (year === moment().year()) {
+    url.searchParams.delete('year');
+  } else {
+    url.searchParams.set('year', year);
+  }
+  window.history.replaceState({ year: year }, '', url.toString());
+}
+
+function changeYear(year) {
+  currentYear = year;
+  updateUrlWithYear(year);
+  populateCalendar();
+}
+
+function incrementYear() {
+  changeYear(currentYear + 1);
+}
+
+function decrementYear() {
+  changeYear(currentYear - 1);
+}
+
+function setupYearControls() {
+  const prevBtn = document.getElementById('year-prev');
+  const nextBtn = document.getElementById('year-next');
+  const yearDisplay = document.getElementById('year-display');
+  const yearInput = document.getElementById('year-input');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      decrementYear();
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      incrementYear();
+    });
+  }
+
+  if (yearDisplay && yearInput) {
+    yearDisplay.addEventListener('click', () => {
+      yearDisplay.classList.add('d-none');
+      yearInput.classList.remove('d-none');
+      yearInput.value = currentYear;
+      yearInput.focus();
+      yearInput.select();
+    });
+
+    const confirmYearInput = () => {
+      const newYear = parseInt(yearInput.value, 10);
+      if (!isNaN(newYear) && newYear > 0 && newYear < 10000) {
+        changeYear(newYear);
+      }
+      yearDisplay.classList.remove('d-none');
+      yearInput.classList.add('d-none');
+    };
+
+    yearInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmYearInput();
+      } else if (e.key === 'Escape') {
+        yearDisplay.classList.remove('d-none');
+        yearInput.classList.add('d-none');
+      }
+    });
+
+    yearInput.addEventListener('blur', confirmYearInput);
+  }
+}
+
 // Custom $(document).ready() function
 function ready(fn) {
   if (document.readyState != 'loading') {
@@ -23,15 +113,38 @@ function sortWeekDays(arr, firstDay) {
   }
 }
 
+function clearCalendarData() {
+  document.querySelectorAll('.months>.month').forEach(element => {
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+    delete element.dataset.month;
+    element.classList.remove('table-active');
+  });
+
+  document.querySelectorAll('.day').forEach(element => {
+    delete element.dataset.months;
+    element.classList.remove('table-active', 'table-danger');
+  });
+
+  document.querySelectorAll('.date').forEach(element => {
+    element.classList.remove('table-active');
+  });
+}
+
 // Populates the calendar with the proper days/months order
 function populateCalendar() {
-  let weekDaysNames = sortWeekDays(moment.weekdaysShort(true), moment.localeData().firstDayOfWeek()),
-    monthsNames = moment.monthsShort(),
-    now = moment(),
-    eod = moment().endOf('day'),
-    year = now.year(),
-    tempMoment = moment(now),
-    count = 0;
+  clearCalendarData();
+
+  const now = moment();
+  const year = currentYear;
+  const isCurrentYear = (year === now.year());
+  const tempMoment = moment();
+  let count = 0;
+
+  const weekDaysNames = sortWeekDays(moment.weekdaysShort(true), moment.localeData().firstDayOfWeek());
+  const monthsNames = moment.monthsShort();
+
   document.querySelectorAll('.days').forEach(element => {
     element.querySelectorAll('.day').forEach(dayElement => {
       dayElement.dataset.day = count;
@@ -42,28 +155,25 @@ function populateCalendar() {
     });
     count++;
   });
-  let monthsElements = document.querySelectorAll('.months>.month');
-  monthsElements.forEach(element => {
-    while (element.firstChild) {
-      element.removeChild(element.firstChild);
-    }
-  });
-  for (var i = 0; i < 12; i++) {
+
+  for (let i = 0; i < 12; i++) {
     tempMoment.set({
       'year': year,
       'date': 1,
       'month': i
     });
-    let month = document.querySelector('.months > .month:nth-child(' +
+
+    const month = document.querySelector('.months > .month:nth-child(' +
       (tempMoment.isoWeekday() + 1) + '):empty');
     month.dataset.month = i;
     month.textContent = monthsNames[i];
-    let monthContent = document.createElement('span');
+    const monthContent = document.createElement('span');
     monthContent.classList.add('badge', 'bg-secondary', 'position-absolute');
     monthContent.appendChild(document.createTextNode(tempMoment.daysInMonth()));
     month.appendChild(monthContent);
+
     document.querySelectorAll('.days > .day:nth-child(' + (tempMoment.isoWeekday() + 5) + ')').forEach(element => {
-      let dayData = element.dataset;
+      const dayData = element.dataset;
       if (dayData.months === undefined) {
         dayData.months = JSON.stringify([i]);
       } else {
@@ -71,26 +181,51 @@ function populateCalendar() {
       }
     });
   }
+
   document.getElementById('date').textContent = now.format('LL');
-  document.getElementById('year').textContent = year;
+  
+  const yearElement = document.getElementById('year');
+  if (yearElement) {
+    yearElement.textContent = year;
+  }
+  
+  const yearDisplayElement = document.getElementById('year-display');
+  if (yearDisplayElement) {
+    yearDisplayElement.textContent = year;
+  }
+  
   document.getElementById('copyleft-year').textContent = year;
+
   document.querySelectorAll('.day').forEach(element => {
     element.textContent = weekDaysNames[element.dataset.day];
     element.classList.toggle('table-danger', element.dataset.day == 6);
   });
-  document.querySelectorAll('.month').forEach(element => {
-    if (element.dataset.month == now.toObject().months)
-      element.classList.add('table-active');
-  });
-  let dateCell = document.evaluate("//td[text()='" + now.toObject().date + "']",
-    document, null, XPathResult.ANY_TYPE, null).iterateNext();
-  dateCell.classList.add('table-active');
-  dateCell.parentNode.querySelectorAll('.day').forEach(element => {
-    if (element.dataset.months !== undefined && JSON.parse(element.dataset.months).includes(now.toObject().months))
-      element.classList.add('table-active');
-  });
-  // Setting a timeout to autoupdate calendar 100ms past midnight
-  setTimeout(populateCalendar, eod.diff(now) + 100);
+
+  if (isCurrentYear) {
+    const currentMonth = now.toObject().months;
+    document.querySelectorAll('.month').forEach(element => {
+      if (parseInt(element.dataset.month, 10) === currentMonth) {
+        element.classList.add('table-active');
+      }
+    });
+
+    const dateCell = document.evaluate("//td[text()='" + now.toObject().date + "']",
+      document, null, XPathResult.ANY_TYPE, null).iterateNext();
+    if (dateCell) {
+      dateCell.classList.add('table-active');
+      dateCell.parentNode.querySelectorAll('.day').forEach(element => {
+        if (element.dataset.months !== undefined && JSON.parse(element.dataset.months).includes(currentMonth)) {
+          element.classList.add('table-active');
+        }
+      });
+    }
+  }
+
+  if (isCurrentYear) {
+    const eod = moment().endOf('day');
+    clearTimeout(window.midnightTimeout);
+    window.midnightTimeout = setTimeout(populateCalendar, eod.diff(now) + 100);
+  }
 }
 
 let verticalPhoneModal;
@@ -170,6 +305,7 @@ ready(() => {
   });
   // Main functionality
   moment.locale(window.navigator.language);
+  setupYearControls();
   populateCalendar();
   // Tooltips
   [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).map(element => {
