@@ -44,6 +44,212 @@ html[data-bs-theme="dark"] #bottom-credits img {
   border-radius: 0 0 0 .5em;
 }
 
+/* Calendar interactive styles */
+.month, .day, .date {
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover highlighting for week cells - cross effect */
+.day-hover-highlight {
+  position: relative;
+  z-index: 1;
+}
+
+.day-hover-highlight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+}
+
+html[data-bs-theme="dark"] .day:hover,
+html[data-bs-theme="dark"] .day.hover-highlight,
+html[data-bs-theme="dark"] .month.hover-highlight,
+html[data-bs-theme="dark"] .date.hover-highlight {
+  background-color: rgba(13, 202, 240, 0.3) !important;
+  box-shadow: rgba(13, 202, 240, 0.5) 0px 0px 0px 9999px inset;
+}
+
+html[data-bs-theme="light"] .day:hover,
+html[data-bs-theme="light"] .day.hover-highlight,
+html[data-bs-theme="light"] .month.hover-highlight,
+html[data-bs-theme="light"] .date.hover-highlight {
+  background-color: rgba(13, 110, 253, 0.2) !important;
+  box-shadow: rgba(13, 110, 253, 0.3) 0px 0px 0px 9999px inset;
+}
+
+/* Selected states */
+html[data-bs-theme="dark"] .day.selected {
+  background-color: rgba(13, 202, 240, 0.6) !important;
+  box-shadow: rgba(13, 202, 240, 0.8) 0px 0px 0px 9999px inset;
+  font-weight: bold;
+}
+
+html[data-bs-theme="light"] .day.selected {
+  background-color: rgba(13, 110, 253, 0.5) !important;
+  box-shadow: rgba(13, 110, 253, 0.7) 0px 0px 0px 9999px inset;
+  font-weight: bold;
+}
+
+html[data-bs-theme="dark"] .month.selected {
+  background-color: rgba(25, 135, 84, 0.6) !important;
+  box-shadow: rgba(25, 135, 84, 0.8) 0px 0px 0px 9999px inset;
+  font-weight: bold;
+}
+
+html[data-bs-theme="light"] .month.selected {
+  background-color: rgba(25, 135, 84, 0.5) !important;
+  box-shadow: rgba(25, 135, 84, 0.7) 0px 0px 0px 9999px inset;
+  font-weight: bold;
+}
+
+html[data-bs-theme="dark"] .date.selected {
+  background-color: rgba(220, 53, 69, 0.6) !important;
+  box-shadow: rgba(220, 53, 69, 0.8) 0px 0px 0px 9999px inset;
+  font-weight: bold;
+}
+
+html[data-bs-theme="light"] .date.selected {
+  background-color: rgba(220, 53, 69, 0.5) !important;
+  box-shadow: rgba(220, 53, 69, 0.7) 0px 0px 0px 9999px inset;
+  font-weight: bold;
+}
+
+/* Pulse animation */
+@keyframes pulse-once {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pulse-animation {
+  animation: pulse-once 0.5s ease-in-out;
+}
+
+html[data-bs-theme="dark"] .day.pulse-animation {
+  background-color: rgba(255, 193, 7, 0.6) !important;
+  box-shadow: rgba(255, 193, 7, 0.8) 0px 0px 0px 9999px inset;
+}
+
+html[data-bs-theme="light"] .day.pulse-animation {
+  background-color: rgba(255, 193, 7, 0.5) !important;
+  box-shadow: rgba(255, 193, 7, 0.7) 0px 0px 0px 9999px inset;
+}
+
+/* Info window styles */
+#week-info-modal {
+  position: fixed;
+  z-index: 1050;
+  background-color: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+#week-info-modal.show {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+#week-info-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+#week-info-modal .modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+#week-info-modal .btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+#week-info-modal .btn-close:hover {
+  opacity: 1;
+}
+
+#week-info-modal .modal-body {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#week-info-modal .date-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#week-info-modal .date-list li {
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed var(--bs-border-color);
+}
+
+#week-info-modal .date-list li:last-child {
+  border-bottom: none;
+}
+
+html[data-bs-theme="dark"] #week-info-modal {
+  background-color: #212529;
+  border-color: #495057;
+  color: #f8f9fa;
+}
+
+html[data-bs-theme="light"] #week-info-modal {
+  background-color: #ffffff;
+  border-color: #dee2e6;
+  color: #212529;
+}
+
+/* Overlay for closing when clicking outside */
+#modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1040;
+  background-color: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+#modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 @media (max-width: 565px) {
   .months>.month {
     text-align: left;
