@@ -243,6 +243,27 @@ function highlightIntersection(monthElement, dateElement) {
   });
 }
 
+function getDateElementByDayNumber(dayNumber) {
+  let dateCells = document.querySelectorAll('.date');
+  for (let cell of dateCells) {
+    if (cell.textContent.trim() === String(dayNumber)) {
+      return cell;
+    }
+  }
+  return null;
+}
+
+function validateDateForMonth(monthIndex, dayNumber) {
+  let year = moment().year();
+  let testDate = moment({ year: year, month: monthIndex, date: dayNumber });
+  let daysInMonth = moment({ year: year, month: monthIndex }).daysInMonth();
+  
+  if (dayNumber > daysInMonth) {
+    return { valid: false, lastDay: daysInMonth };
+  }
+  return { valid: true, lastDay: daysInMonth };
+}
+
 function setupCalendarInteraction() {
   document.querySelectorAll('.month').forEach(month => {
     month.addEventListener('mouseenter', () => {
@@ -259,6 +280,8 @@ function setupCalendarInteraction() {
       e.preventDefault();
       if (month.dataset.month === undefined) return;
       
+      let isNewSelection = selectedMonthElement !== month;
+      
       if (selectedMonthElement === month) {
         selectedMonthElement = null;
         month.classList.remove('selected');
@@ -268,6 +291,23 @@ function setupCalendarInteraction() {
         }
         selectedMonthElement = month;
         month.classList.add('selected');
+      }
+      
+      if (isNewSelection && selectedDateElement) {
+        let monthIndex = parseInt(month.dataset.month);
+        let selectedDay = parseInt(selectedDateElement.textContent.trim());
+        let validation = validateDateForMonth(monthIndex, selectedDay);
+        
+        if (!validation.valid) {
+          selectedDateElement.classList.remove('selected');
+          let newDateElement = getDateElementByDayNumber(validation.lastDay);
+          if (newDateElement) {
+            selectedDateElement = newDateElement;
+            selectedDateElement.classList.add('selected');
+          } else {
+            selectedDateElement = null;
+          }
+        }
       }
       
       updateHighlights();
