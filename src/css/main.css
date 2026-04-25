@@ -550,21 +550,28 @@ html[data-skin="dense"] #one-page-calendar td {
   line-height: 1.2;
 }
 
-html[data-skin="dense"] #one-page-calendar .table-active {
+html[data-skin="dense"] #one-page-calendar .table-active,
+html[data-skin="dense"] #one-page-calendar.border-dark .table-active,
+html[data-skin="dense"] #one-page-calendar.border-light .table-active {
   box-shadow: none !important;
   background-color: #fff !important;
   color: #000 !important;
   font-weight: bold;
 }
 
-html[data-skin="dense"] #one-page-calendar .table-danger {
+html[data-skin="dense"] #one-page-calendar .table-danger,
+html[data-skin="dense"] #one-page-calendar.border-dark .table-danger,
+html[data-skin="dense"] #one-page-calendar.border-light .table-danger {
   color: #ff0000 !important;
   border-color: #ff0000 !important;
 }
 
-html[data-skin="dense"] #one-page-calendar .table-danger.table-active {
+html[data-skin="dense"] #one-page-calendar .table-danger.table-active,
+html[data-skin="dense"] #one-page-calendar.border-dark .table-danger.table-active,
+html[data-skin="dense"] #one-page-calendar.border-light .table-danger.table-active {
   background-color: #ff0000 !important;
   color: #fff !important;
+  box-shadow: none !important;
 }
 
 html[data-skin="dense"] #one-page-calendar .badge {
@@ -618,12 +625,17 @@ html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar td {
   border-color: #000 !important;
 }
 
-html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar .table-active {
+html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar .table-active,
+html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar.border-dark .table-active,
+html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar.border-light .table-active {
   background-color: #000 !important;
   color: #fff !important;
+  box-shadow: none !important;
 }
 
-html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar .table-danger {
+html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar .table-danger,
+html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar.border-dark .table-danger,
+html[data-skin="dense"][data-bs-theme="light"] #one-page-calendar.border-light .table-danger {
   color: #ff0000 !important;
   border-color: #ff0000 !important;
 }
