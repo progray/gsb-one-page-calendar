@@ -51,6 +51,7 @@
           <tr class="months">
             <td colspan="5" rowspan="3">
               <h5 id="date" class="m-0 d-print-none"></h5>
+              <h5 id="lunar-date" class="m-0 d-print-none text-muted small" style="display:none;"></h5>
               <h3 id="year" class="m-0 d-none d-print-block"></h3>
             </td>
             <td class="month position-relative"></td>
@@ -189,6 +190,12 @@
         </caption>
       </table>
     </div>
+    <div id="lunar-summary-bar" class="d-print-none w-100 px-3 py-2 mb-2 border-top" style="display:none;">
+      <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+        <span class="fw-bold me-2">本月节气节日：</span>
+        <div id="summary-items" class="d-flex flex-wrap gap-2"></div>
+      </div>
+    </div>
     <div id="bottom-credits" class="d-print-none d-flex text-nowrap align-items-center">
       <span>One Page Calendar</span>
       <img src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Cc.logo.circle.svg" alt="CC" class="px-1"
@@ -204,6 +211,7 @@
       </form>
     </div>
   </div>
+  <div id="lunar-tooltip" class="position-fixed p-3 rounded shadow-sm d-none z-3" style="min-width: 180px;"></div>
   <div id="print-modal" class="modal fade d-print-none" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
