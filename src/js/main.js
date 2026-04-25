@@ -9,6 +9,337 @@ function ready(fn) {
   }
 }
 
+// Calendar interaction state
+let calendarState = {
+  selectedType: null, // 'day', 'month', 'date', or null
+  selectedElement: null,
+  weekInfoModal: null,
+  modalOverlay: null
+};
+
+// Initialize calendar interaction
+function initCalendarInteraction() {
+  calendarState.weekInfoModal = document.getElementById('week-info-modal');
+  calendarState.modalOverlay = document.getElementById('modal-overlay');
+  
+  // Bind week cell hover events
+  document.querySelectorAll('.day').forEach(dayCell => {
+    dayCell.addEventListener('mouseenter', handleDayHover);
+    dayCell.addEventListener('mouseleave', handleDayHoverLeave);
+    dayCell.addEventListener('click', handleDayClick);
+  });
+
+  // Bind month cell events
+  document.querySelectorAll('.month').forEach(monthCell => {
+    monthCell.addEventListener('click', handleMonthClick);
+  });
+
+  // Bind date cell events
+  document.querySelectorAll('.date').forEach(dateCell => {
+    dateCell.addEventListener('click', handleDateClick);
+  });
+
+  // Bind close modal events
+  document.getElementById('week-info-close').addEventListener('click', hideWeekInfoModal);
+  calendarState.modalOverlay.addEventListener('click', hideWeekInfoModal);
+}
+
+// Handle week cell hover - cross highlighting
+function handleDayHover(event) {
+  const dayCell = event.target;
+  const dayRow = dayCell.parentNode;
+  const dayIndex = Array.from(dayRow.children).indexOf(dayCell);
+  
+  // Calculate corresponding month column index
+  // Week cells are at columns 5-11 in .days rows
+  // Month cells are at columns 1-7 in .months rows
+  // Offset = 5 - 1 = 4
+  const monthColumnIndex = dayIndex - 4;
+  
+  // Highlight the hovered week cell
+  dayCell.classList.add('hover-highlight');
+  
+  // Highlight related month cells (same column position across month rows)
+  if (monthColumnIndex >= 1 && monthColumnIndex <= 7) {
+    const monthRows = document.querySelectorAll('.months');
+    monthRows.forEach(row => {
+      const monthCell = row.children[monthColumnIndex];
+      if (monthCell && monthCell.classList.contains('month')) {
+        monthCell.classList.add('hover-highlight');
+      }
+    });
+  }
+  
+  // Highlight related date cells (same row)
+  const dateCells = dayRow.querySelectorAll('.date');
+  dateCells.forEach(dateCell => {
+    dateCell.classList.add('hover-highlight');
+  });
+}
+
+// Handle week cell hover leave - remove cross highlighting
+function handleDayHoverLeave(event) {
+  const dayCell = event.target;
+  const dayRow = dayCell.parentNode;
+  const dayIndex = Array.from(dayRow.children).indexOf(dayCell);
+  
+  // Calculate corresponding month column index
+  const monthColumnIndex = dayIndex - 4;
+  
+  // Remove highlight from week cell
+  dayCell.classList.remove('hover-highlight');
+  
+  // Remove highlight from related month cells
+  if (monthColumnIndex >= 1 && monthColumnIndex <= 7) {
+    const monthRows = document.querySelectorAll('.months');
+    monthRows.forEach(row => {
+      const monthCell = row.children[monthColumnIndex];
+      if (monthCell && monthCell.classList.contains('month')) {
+        monthCell.classList.remove('hover-highlight');
+      }
+    });
+  }
+  
+  // Remove highlight from date cells
+  const dateCells = dayRow.querySelectorAll('.date');
+  dateCells.forEach(dateCell => {
+    dateCell.classList.remove('hover-highlight');
+  });
+}
+
+// Handle week cell click - show info modal
+function handleDayClick(event) {
+  event.stopPropagation();
+  const dayCell = event.target;
+  
+  // Clear previous selection
+  clearAllSelections();
+  
+  // Set new selection
+  calendarState.selectedType = 'day';
+  calendarState.selectedElement = dayCell;
+  dayCell.classList.add('selected');
+  
+  // Show week info modal
+  showWeekInfoModal(dayCell);
+}
+
+// Handle month cell click - select month and pulse related week cells
+function handleMonthClick(event) {
+  event.stopPropagation();
+  const monthCell = event.target;
+  
+  // Clear previous selection
+  clearAllSelections();
+  
+  // Set new selection
+  calendarState.selectedType = 'month';
+  calendarState.selectedElement = monthCell;
+  monthCell.classList.add('selected');
+  
+  // Find and highlight related week cells
+  const monthIndex = parseInt(monthCell.dataset.month);
+  const relatedWeekCells = findWeekCellsByMonth(monthIndex);
+  
+  // Add selected class to related week cells
+  relatedWeekCells.forEach(weekCell => {
+    weekCell.classList.add('selected');
+  });
+  
+  // Pulse animation
+  pulseWeekCells(relatedWeekCells);
+}
+
+// Handle date cell click - select date and pulse related week cell
+function handleDateClick(event) {
+  event.stopPropagation();
+  const dateCell = event.target;
+  
+  // Clear previous selection
+  clearAllSelections();
+  
+  // Set new selection
+  calendarState.selectedType = 'date';
+  calendarState.selectedElement = dateCell;
+  dateCell.classList.add('selected');
+  
+  // Find and pulse related week cell
+  const dayRow = dateCell.parentNode;
+  const relatedWeekCell = findWeekCellByDateRow(dayRow);
+  
+  if (relatedWeekCell) {
+    pulseWeekCells([relatedWeekCell]);
+  }
+}
+
+// Find week cells that correspond to a given month
+function findWeekCellsByMonth(monthIndex) {
+  const weekCells = [];
+  document.querySelectorAll('.day').forEach(dayCell => {
+    if (dayCell.dataset.months) {
+      const months = JSON.parse(dayCell.dataset.months);
+      if (months.includes(monthIndex)) {
+        weekCells.push(dayCell);
+      }
+    }
+  });
+  return weekCells;
+}
+
+// Find week cell in the same row as a date cell
+function findWeekCellByDateRow(dateRow) {
+  const dayCells = dateRow.querySelectorAll('.day');
+  return dayCells.length > 0 ? dayCells[0] : null;
+}
+
+// Pulse week cells with animation
+function pulseWeekCells(weekCells) {
+  weekCells.forEach(cell => {
+    cell.classList.add('pulse-animation');
+    setTimeout(() => {
+      cell.classList.remove('pulse-animation');
+    }, 500);
+  });
+}
+
+// Clear all selections
+function clearAllSelections() {
+  // Clear week selections
+  document.querySelectorAll('.day.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+  
+  // Clear month selections
+  document.querySelectorAll('.month.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+  
+  // Clear date selections
+  document.querySelectorAll('.date.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+  
+  // Hide week info modal
+  hideWeekInfoModal();
+  
+  // Reset state
+  calendarState.selectedType = null;
+  calendarState.selectedElement = null;
+}
+
+// Show week info modal
+function showWeekInfoModal(dayCell) {
+  const dayRow = dayCell.parentNode;
+  const dayName = dayCell.textContent;
+  const months = dayCell.dataset.months ? JSON.parse(dayCell.dataset.months) : [];
+  const datesInRow = Array.from(dayRow.querySelectorAll('.date')).map(d => parseInt(d.textContent));
+  
+  // Generate all month-date combinations
+  const dateCombinations = [];
+  const monthsNames = moment.months();
+  
+  months.forEach(monthIndex => {
+    const monthName = monthsNames[monthIndex];
+    datesInRow.forEach(date => {
+      // Check if date is valid for this month
+      const tempMoment = moment();
+      tempMoment.set({
+        'month': monthIndex,
+        'date': 1
+      });
+      const daysInMonth = tempMoment.daysInMonth();
+      
+      if (date <= daysInMonth) {
+        dateCombinations.push({
+          month: monthIndex,
+          monthName: monthName,
+          date: date
+        });
+      }
+    });
+  });
+  
+  // Sort by month, then date
+  dateCombinations.sort((a, b) => {
+    if (a.month !== b.month) return a.month - b.month;
+    return a.date - b.date;
+  });
+  
+  // Update modal content
+  document.getElementById('week-info-title').textContent = dayName + ' - ' + document.getElementById('year').textContent;
+  
+  const datesList = document.getElementById('week-info-dates');
+  datesList.innerHTML = '';
+  
+  if (dateCombinations.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = '无相关日期';
+    datesList.appendChild(li);
+  } else {
+    dateCombinations.forEach(combo => {
+      const li = document.createElement('li');
+      li.textContent = (combo.month + 1) + '月' + combo.date + '日';
+      datesList.appendChild(li);
+    });
+  }
+  
+  // Position modal in center of calendar area
+  const modal = calendarState.weekInfoModal;
+  const calendarContainer = document.getElementById('one-page-calendar-container');
+  
+  // Get modal dimensions (temporarily show to calculate)
+  modal.style.display = 'block';
+  modal.style.visibility = 'hidden';
+  
+  const modalWidth = modal.offsetWidth || 400;
+  const modalHeight = modal.offsetHeight || 350;
+  
+  // Get calendar container position and dimensions
+  const calendarRect = calendarContainer.getBoundingClientRect();
+  
+  // Calculate center position within calendar area
+  const calendarCenterX = calendarRect.left + calendarRect.width / 2;
+  const calendarCenterY = calendarRect.top + calendarRect.height / 2;
+  
+  const left = calendarCenterX - modalWidth / 2;
+  const top = calendarCenterY - modalHeight / 2;
+  
+  // Reset temporary styles
+  modal.style.display = '';
+  modal.style.visibility = '';
+  
+  // Set position
+  modal.style.left = left + 'px';
+  modal.style.top = top + 'px';
+  
+  // Show modal with animation
+  calendarState.modalOverlay.classList.add('show');
+  modal.classList.add('show');
+}
+
+// Hide week info modal
+function hideWeekInfoModal() {
+  if (calendarState.weekInfoModal) {
+    calendarState.weekInfoModal.classList.remove('show');
+  }
+  if (calendarState.modalOverlay) {
+    calendarState.modalOverlay.classList.remove('show');
+  }
+}
+
+// Click outside to clear selection
+document.addEventListener('click', (event) => {
+  // Check if click is outside calendar elements
+  const isCalendarElement = event.target.closest('.month') ||
+                           event.target.closest('.day') ||
+                           event.target.closest('.date') ||
+                           event.target.closest('#week-info-modal');
+  
+  if (!isCalendarElement && calendarState.selectedType) {
+    clearAllSelections();
+  }
+});
+
 // Takes the list of days and reoders it depending of the locale's first day
 function sortWeekDays(arr, firstDay) {
   let result = {};
@@ -178,4 +509,6 @@ ready(() => {
       trigger: 'hover'
     });
   });
+  // Calendar interaction
+  initCalendarInteraction();
 });
