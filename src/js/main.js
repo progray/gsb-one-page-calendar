@@ -1,6 +1,69 @@
 /*global moment, bootstrap*/
 
-// Custom $(document).ready() function
+const SKINS = ['classic', 'terminal', 'blueprint', 'handwritten', 'dense'];
+
+function getCurrentSkin() {
+  return localStorage.getItem('calendar-skin') || 'classic';
+}
+
+function setCurrentSkin(skinName) {
+  if (!SKINS.includes(skinName)) return;
+  localStorage.setItem('calendar-skin', skinName);
+  applySkin(skinName);
+  updateSkinPreviewActive(skinName);
+}
+
+function applySkin(skinName) {
+  const html = document.documentElement;
+  
+  SKINS.forEach(skin => {
+    html.classList.remove(`skin-${skin}`);
+  });
+  
+  if (skinName === 'classic') {
+    html.removeAttribute('data-skin');
+  } else {
+    html.setAttribute('data-skin', skinName);
+  }
+  
+  if (skinName === 'handwritten') {
+    applyHandwrittenRotations();
+  }
+}
+
+function applyHandwrittenRotations() {
+  const cells = document.querySelectorAll('#one-page-calendar td');
+  cells.forEach(cell => {
+    const randomRotation = (Math.random() - 0.5) * 4;
+    cell.style.setProperty('--rotation', `${randomRotation}deg`);
+  });
+}
+
+function updateSkinPreviewActive(skinName) {
+  document.querySelectorAll('.skin-preview').forEach(preview => {
+    const previewSkin = preview.dataset.skin;
+    preview.classList.toggle('active', previewSkin === skinName);
+  });
+}
+
+function toggleSkinPanel() {
+  const panel = document.getElementById('skin-panel');
+  const computedStyle = window.getComputedStyle(panel);
+  const isVisible = computedStyle.display !== 'none';
+  panel.style.display = isVisible ? 'none' : 'block';
+}
+
+function closeSkinPanelIfOpen(event) {
+  const panel = document.getElementById('skin-panel');
+  const skinButton = document.getElementById('skin-button');
+  
+  if (panel.style.display !== 'none' && 
+      !panel.contains(event.target) && 
+      !skinButton.contains(event.target)) {
+    panel.style.display = 'none';
+  }
+}
+
 function ready(fn) {
   if (document.readyState != 'loading') {
     fn();
@@ -9,7 +72,6 @@ function ready(fn) {
   }
 }
 
-// Takes the list of days and reoders it depending of the locale's first day
 function sortWeekDays(arr, firstDay) {
   let result = {};
   if (firstDay === 0) {
@@ -23,7 +85,6 @@ function sortWeekDays(arr, firstDay) {
   }
 }
 
-// Populates the calendar with the proper days/months order
 function populateCalendar() {
   let weekDaysNames = sortWeekDays(moment.weekdaysShort(true), moment.localeData().firstDayOfWeek()),
     monthsNames = moment.monthsShort(),
@@ -89,13 +150,16 @@ function populateCalendar() {
     if (element.dataset.months !== undefined && JSON.parse(element.dataset.months).includes(now.toObject().months))
       element.classList.add('table-active');
   });
-  // Setting a timeout to autoupdate calendar 100ms past midnight
+  
+  if (getCurrentSkin() === 'handwritten') {
+    applyHandwrittenRotations();
+  }
+  
   setTimeout(populateCalendar, eod.diff(now) + 100);
 }
 
 let verticalPhoneModal;
 
-// Displays a modal suggesting the use of vertical mode on mobile devices
 function checkTightSpot() {
   if (window.innerWidth < 468) {
     if (localStorage.getItem('dont-bother-vertical') == null || localStorage.getItem('dont-bother-vertical') == 'false') {
@@ -116,12 +180,9 @@ function checkTightSpot() {
   }
 }
 
-// Find all elements that have any class ending in "-light" or "-dark"
 function toggleLightDarkClasses() {
   document.body.querySelectorAll('[class*="-light"], [class*="-dark"]').forEach(el => {
-    // get the full className string
     let cls = el.className;
-    // regex to replace all "-light" suffixes with "-dark", and "-dark" with "-light"
     cls = cls.replace(/\b([^\s]+?)-(light|dark)\b/g, (match, base, suffix) => {
       return base + (suffix === 'light' ? '-dark' : '-light');
     });
@@ -129,10 +190,28 @@ function toggleLightDarkClasses() {
   });
 }
 
-
-
 ready(() => {
-  // Dark Mode
+  const currentSkin = getCurrentSkin();
+  applySkin(currentSkin);
+  updateSkinPreviewActive(currentSkin);
+  
+  const skinButton = document.getElementById('skin-button');
+  if (skinButton) {
+    skinButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleSkinPanel();
+    });
+  }
+  
+  document.querySelectorAll('.skin-preview').forEach(preview => {
+    preview.addEventListener('click', () => {
+      const skinName = preview.dataset.skin;
+      setCurrentSkin(skinName);
+    });
+  });
+  
+  document.addEventListener('click', closeSkinPanelIfOpen);
+  
   if (localStorage.getItem('dark-mode') === null)
     localStorage.setItem('dark-mode', 'dark');
   else if (localStorage.getItem('dark-mode') === 'light') {
@@ -148,7 +227,6 @@ ready(() => {
       toggleLightDarkClasses();
     });
   });
-  // Print functionality
   let printModal = new bootstrap.Modal(document.getElementById('print-modal'));
   document.getElementById('launch-print-modal-button').addEventListener('click', () => {
     printModal.show();
@@ -160,7 +238,6 @@ ready(() => {
       once: true
     });
   });
-  // Vertical phone mode warning
   document.getElementById('dont-bother-checkbox').checked = false;
   verticalPhoneModal = new bootstrap.Modal(document.getElementById('vertical-mobile-modal'));
   checkTightSpot();
@@ -168,10 +245,8 @@ ready(() => {
   document.getElementById('dont-bother-checkbox').addEventListener('change', (event) => {
     localStorage.setItem('dont-bother-vertical', event.target.checked);
   });
-  // Main functionality
   moment.locale(window.navigator.language);
   populateCalendar();
-  // Tooltips
   [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).map(element => {
     new bootstrap.Tooltip(element, {
       customClass: 'd-print-none',

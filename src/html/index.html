@@ -10,12 +10,21 @@
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
     integrity="sha384-Ay26V7L8bsJTsX9Sxclnvsn+hkdiwRnrjZJXqKmkIDobPgIIWBOVguEcQQLDuhfN" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@300;400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.min.css">
 </head>
 
 <body class="h-100">
   <div class="h-100 container-fluid d-flex flex-column justify-content-between align-items-center">
     <div id="top-buttons" class="button-toolbar justify-self-start align-self-end mt-2 d-print-none">
+      <div class="btn-group me-2">
+        <button id="skin-button" class="btn btn-outline-light rounded-circle" data-bs-toggle="tooltip"
+          title="Change Skin">
+          <i class="bi bi-palette-fill"></i>
+        </button>
+      </div>
       <div class="btn-group me-2">
         <button id="darkmode-button" class="btn btn-outline-light rounded-circle d-none" data-bs-theme-value="dark"
           data-bs-toggle="tooltip" title="Enable Dark Mode">
@@ -202,6 +211,40 @@
         <input type="hidden" name="currency_code" value="USD" />
         <button type="submit" class="btn btn-link p-0 align-baseline">Donate</button>
       </form>
+    </div>
+  </div>
+  <div id="skin-panel" class="d-print-none position-fixed top-0 end-0 mt-5 me-2 bg-dark border border-light rounded p-3 z-3" style="display: none;">
+    <div class="row g-2" style="width: 300px;">
+      <div class="col-4">
+        <div class="skin-preview" data-skin="classic" data-bs-toggle="tooltip" title="Classic">
+          <div class="skin-preview-inner classic-preview"></div>
+          <div class="skin-name">Classic</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="skin-preview" data-skin="terminal" data-bs-toggle="tooltip" title="Terminal">
+          <div class="skin-preview-inner terminal-preview"></div>
+          <div class="skin-name">Terminal</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="skin-preview" data-skin="blueprint" data-bs-toggle="tooltip" title="Blueprint">
+          <div class="skin-preview-inner blueprint-preview"></div>
+          <div class="skin-name">Blueprint</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="skin-preview" data-skin="handwritten" data-bs-toggle="tooltip" title="Handwritten">
+          <div class="skin-preview-inner handwritten-preview"></div>
+          <div class="skin-name">Handwritten</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="skin-preview" data-skin="dense" data-bs-toggle="tooltip" title="Dense">
+          <div class="skin-preview-inner dense-preview"></div>
+          <div class="skin-name">Dense</div>
+        </div>
+      </div>
     </div>
   </div>
   <div id="print-modal" class="modal fade d-print-none" tabindex="-1">
