@@ -2,6 +2,11 @@
   height: 2.625em;
 }
 
+#particle-canvas {
+  display: block;
+  will-change: transform;
+}
+
 #one-page-calendar.border-dark .table-danger {
   border-right: solid 1px #212529 !important;
 }
