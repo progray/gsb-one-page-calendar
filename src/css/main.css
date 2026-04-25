@@ -54,6 +54,212 @@ html[data-bs-theme="dark"] #bottom-credits img {
   }
 }
 
+/* ==================== 农历功能样式 ==================== */
+
+.month-selected {
+  border: 3px solid #0d6efd !important;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
+  position: relative;
+}
+
+.month-selected::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 1px solid rgba(13, 110, 253, 0.5);
+  border-radius: inherit;
+  animation: monthPulse 2s ease-in-out infinite;
+}
+
+@keyframes monthPulse {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.lunar-info {
+  font-size: 0.75em;
+  opacity: 0.8;
+  display: block;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.jieqi-text {
+  font-size: 0.75em;
+  display: block;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.festival-badge {
+  z-index: 10;
+  animation: badgePop 0.3s ease-out;
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.lunar-fade-in {
+  animation: lunarFadeIn 0.3s ease-out forwards;
+}
+
+.lunar-fade-out {
+  animation: lunarFadeOut 0.3s ease-out forwards;
+}
+
+@keyframes lunarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lunarFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+#lunar-tooltip {
+  background-color: rgba(33, 37, 41, 0.95);
+  color: #fff;
+  border: 1px solid #495057;
+  font-size: 0.875rem;
+  z-index: 1050;
+  max-width: 250px;
+  pointer-events: none;
+}
+
+html[data-bs-theme="light"] #lunar-tooltip {
+  background-color: rgba(255, 255, 255, 0.98);
+  color: #212529;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tooltip-fade-in {
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse-highlight {
+  animation: pulseHighlight 0.5s ease-in-out infinite alternate;
+  position: relative;
+}
+
+.pulse-highlight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #ffc107;
+  border-radius: 0.25rem;
+  animation: pulseBorder 1s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseHighlight {
+  from {
+    background-color: inherit;
+  }
+  to {
+    background-color: rgba(255, 193, 7, 0.3) !important;
+  }
+}
+
+@keyframes pulseBorder {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.02);
+  }
+}
+
+#lunar-summary-bar {
+  background-color: rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+html[data-bs-theme="dark"] #lunar-summary-bar {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.summary-item {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.summary-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.lunar-cell {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.lunar-cell:hover {
+  background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+#date {
+  transition: all 0.3s ease;
+}
+
+#lunar-date {
+  transition: all 0.3s ease;
+}
+
+html[data-bs-theme="dark"] .text-muted {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
 @media print {
 
   table,
@@ -90,6 +296,22 @@ html[data-bs-theme="dark"] #bottom-credits img {
     display: table-caption;
     color: #000;
     border-top: none;
+  }
+
+  /* Hide lunar features when printing */
+  #lunar-summary-bar,
+  #lunar-date,
+  .lunar-info,
+  .jieqi-text,
+  .festival-badge,
+  #lunar-tooltip,
+  .month-selected::before {
+    display: none !important;
+  }
+
+  .month-selected {
+    border: inherit !important;
+    box-shadow: none !important;
   }
 
 }
