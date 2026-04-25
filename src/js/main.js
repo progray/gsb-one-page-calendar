@@ -258,35 +258,61 @@ const ParticleSystem = {
   lastHoverParticleTime: 0,
   hoverParticleInterval: 300, // 300ms between hover particle generations
   
+  // Find the closest cell element from event target
+  findCellElement: function(element) {
+    while (element && element !== document) {
+      if (this.getCellType(element)) {
+        return element;
+      }
+      element = element.parentNode;
+    }
+    return null;
+  },
+  
   // Setup event listeners
   setupEventListeners: function() {
     // Click events on calendar cells
     const calendar = document.getElementById('one-page-calendar');
     if (calendar) {
+      // Use event delegation for click
       calendar.addEventListener('click', (e) => {
-        const cellType = this.getCellType(e.target);
-        if (cellType) {
-          this.createBurst(e.target);
+        const cell = this.findCellElement(e.target);
+        if (cell) {
+          this.createBurst(cell);
         }
       });
       
-      // Hover events on calendar cells
-      calendar.addEventListener('mouseenter', (e) => {
-        const cellType = this.getCellType(e.target);
-        if (cellType) {
-          this.currentHoverCell = e.target;
+      // Use mouseover and mouseout instead of mouseenter/mouseleave for event delegation
+      calendar.addEventListener('mouseover', (e) => {
+        const cell = this.findCellElement(e.target);
+        if (cell && cell !== this.currentHoverCell) {
+          this.currentHoverCell = cell;
           // Start generating hover particles immediately
-          this.createHoverParticles(e.target);
+          this.createHoverParticles(cell);
           this.lastHoverParticleTime = performance.now();
         }
-      }, true);
+      });
       
-      calendar.addEventListener('mouseleave', (e) => {
-        const cellType = this.getCellType(e.target);
-        if (cellType) {
-          this.currentHoverCell = null;
+      calendar.addEventListener('mouseout', (e) => {
+        const cell = this.findCellElement(e.target);
+        if (cell) {
+          // Check if the mouse is actually leaving the calendar or just moving to another cell
+          const relatedTarget = e.relatedTarget;
+          const relatedCell = relatedTarget ? this.findCellElement(relatedTarget) : null;
+          
+          if (!relatedCell || relatedCell !== cell) {
+            // Only clear if moving to a different cell or outside
+            if (this.currentHoverCell === cell) {
+              this.currentHoverCell = null;
+            }
+          }
         }
-      }, true);
+      });
+      
+      // Also listen for mouseleave on the entire calendar to clear hover
+      calendar.addEventListener('mouseleave', () => {
+        this.currentHoverCell = null;
+      });
     }
     
     // Resize event
