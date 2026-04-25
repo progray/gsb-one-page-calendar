@@ -206,11 +206,11 @@ let selectedMonth = null;
 function getMonthDays(year, month) {
   const date = moment({ year, month, date: 1 });
   const daysInMonth = date.daysInMonth();
-  const startWeekday = date.isoWeekday();
   const days = [];
   
   for (let day = 1; day <= daysInMonth; day++) {
-    const weekday = (startWeekday + day - 2) % 7;
+    const currentDate = moment({ year, month, date: day });
+    const weekday = currentDate.weekday();
     days.push({
       day: day,
       weekday: weekday,
@@ -391,10 +391,11 @@ function updateSummaryBar(year, month) {
   
   allItems.forEach(item => {
     const badge = document.createElement('span');
-    badge.className = `badge rounded-pill ${item.type === '节气' ? 'bg-warning text-dark' : 'bg-danger'} px-3 py-2 summary-item`;
+    const badgeClass = item.type === '节气' ? 'jieqi-badge' : 'festival-badge-summary';
+    badge.className = `badge rounded-pill ${badgeClass} summary-item`;
     badge.style.cursor = 'pointer';
     badge.style.transition = 'transform 0.2s';
-    badge.innerHTML = `${item.name} <span class="text-muted small">(${item.day}日)</span>`;
+    badge.innerHTML = `${item.name} <span class="date-text">(${item.day}日)</span>`;
     badge.dataset.day = item.day;
     badge.dataset.type = item.type;
     badge.dataset.name = item.name;

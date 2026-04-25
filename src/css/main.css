@@ -57,21 +57,25 @@ html[data-bs-theme="dark"] #bottom-credits img {
 /* ==================== 农历功能样式 ==================== */
 
 .month-selected {
-  border: 2px solid #0d6efd !important;
-  box-shadow: 0 0 8px rgba(13, 110, 253, 0.4) !important;
+  border: 3px solid transparent !important;
+  background: linear-gradient(var(--bs-body-bg), var(--bs-body-bg)) padding-box,
+              linear-gradient(135deg, #0d6efd, #6610f2, #d63384, #dc3545, #ffc107, #198754, #0dcaf0) border-box !important;
+  box-shadow: 0 0 15px rgba(13, 110, 253, 0.4), inset 0 0 10px rgba(13, 110, 253, 0.1) !important;
   position: relative;
+  z-index: 1;
 }
 
 .month-selected::before {
   content: '';
   position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border: 1px solid rgba(13, 110, 253, 0.5);
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid rgba(13, 110, 253, 0.3);
   border-radius: inherit;
   animation: monthPulse 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes monthPulse {
@@ -81,38 +85,71 @@ html[data-bs-theme="dark"] #bottom-credits img {
   }
   50% {
     opacity: 1;
-    transform: scale(1.03);
+    transform: scale(1.05);
   }
 }
 
+.day {
+  padding: 0.5rem 0.25rem !important;
+  line-height: 1.2;
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  min-height: 40px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.day > span:first-child {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .lunar-info-wrapper {
-  display: inline-block;
-  margin-left: 4px;
-  vertical-align: middle;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 3px;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .lunar-info {
-  font-size: 0.7em;
-  opacity: 0.75;
-  display: inline;
-  vertical-align: middle;
+  font-size: 0.65em;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lunar-leap {
   font-style: italic;
-  color: #6c757d !important;
-  opacity: 0.6;
+  opacity: 0.5;
+}
+
+html[data-bs-theme="light"] .lunar-info {
+  color: #6c757d;
+}
+
+html[data-bs-theme="light"] .lunar-leap {
+  color: #adb5bd !important;
+}
+
+html[data-bs-theme="dark"] .lunar-info {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 html[data-bs-theme="dark"] .lunar-leap {
-  color: rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
 }
 
 .jieqi-text {
-  font-size: 0.7em;
-  display: inline;
-  vertical-align: middle;
+  font-size: 0.65em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .festival-badge {
@@ -271,22 +308,54 @@ html[data-bs-theme="dark"] #lunar-summary-bar {
   transition: all 0.2s ease;
   user-select: none;
   border: 1px solid transparent;
+  padding: 0.4em 0.8em !important;
+}
+
+.summary-item.jieqi-badge {
+  background: linear-gradient(135deg, #ffc107, #ff9800) !important;
+  color: #212529 !important;
+  font-weight: 600;
+  border: 1px solid #e0a800;
+}
+
+html[data-bs-theme="dark"] .summary-item.jieqi-badge {
+  background: linear-gradient(135deg, #ffc107, #ffb300) !important;
+  color: #212529 !important;
+  border: 1px solid #d39e00;
+}
+
+.summary-item.festival-badge-summary {
+  background: linear-gradient(135deg, #dc3545, #c82333) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border: 1px solid #bd2130;
+}
+
+html[data-bs-theme="dark"] .summary-item.festival-badge-summary {
+  background: linear-gradient(135deg, #dc3545, #d63384) !important;
+  color: #fff !important;
+  border: 1px solid #a71d2a;
+}
+
+.summary-item .date-text {
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin-left: 4px;
 }
 
 .summary-item:hover {
   transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 html[data-bs-theme="dark"] .summary-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .lunar-cell {
   position: relative;
   transition: all 0.2s ease;
   cursor: pointer;
-  padding: 0.5rem 0.25rem !important;
 }
 
 .lunar-cell:hover {
