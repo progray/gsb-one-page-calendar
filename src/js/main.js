@@ -44,32 +44,29 @@ function initCalendarInteraction() {
   calendarState.modalOverlay.addEventListener('click', hideWeekInfoModal);
 }
 
-// Find month cells by month indices
-function findMonthCellsByMonthIndices(monthIndices) {
-  const monthCells = [];
-  document.querySelectorAll('.month').forEach(monthCell => {
-    const cellMonthIndex = parseInt(monthCell.dataset.month);
-    if (monthIndices.includes(cellMonthIndex)) {
-      monthCells.push(monthCell);
-    }
-  });
-  return monthCells;
-}
-
 // Handle week cell hover - cross highlighting
 function handleDayHover(event) {
   const dayCell = event.target;
   const dayRow = dayCell.parentNode;
+  const dayIndex = Array.from(dayRow.children).indexOf(dayCell);
+  
+  // Calculate corresponding month column index
+  // Week cells are at columns 5-11 in .days rows
+  // Month cells are at columns 1-7 in .months rows
+  // Offset = 5 - 1 = 4
+  const monthColumnIndex = dayIndex - 4;
   
   // Highlight the hovered week cell
   dayCell.classList.add('hover-highlight');
   
-  // Highlight related month cells (using data-months attribute)
-  if (dayCell.dataset.months) {
-    const monthIndices = JSON.parse(dayCell.dataset.months);
-    const relatedMonthCells = findMonthCellsByMonthIndices(monthIndices);
-    relatedMonthCells.forEach(monthCell => {
-      monthCell.classList.add('hover-highlight');
+  // Highlight related month cells (same column position across month rows)
+  if (monthColumnIndex >= 1 && monthColumnIndex <= 7) {
+    const monthRows = document.querySelectorAll('.months');
+    monthRows.forEach(row => {
+      const monthCell = row.children[monthColumnIndex];
+      if (monthCell && monthCell.classList.contains('month')) {
+        monthCell.classList.add('hover-highlight');
+      }
     });
   }
   
@@ -84,16 +81,22 @@ function handleDayHover(event) {
 function handleDayHoverLeave(event) {
   const dayCell = event.target;
   const dayRow = dayCell.parentNode;
+  const dayIndex = Array.from(dayRow.children).indexOf(dayCell);
+  
+  // Calculate corresponding month column index
+  const monthColumnIndex = dayIndex - 4;
   
   // Remove highlight from week cell
   dayCell.classList.remove('hover-highlight');
   
   // Remove highlight from related month cells
-  if (dayCell.dataset.months) {
-    const monthIndices = JSON.parse(dayCell.dataset.months);
-    const relatedMonthCells = findMonthCellsByMonthIndices(monthIndices);
-    relatedMonthCells.forEach(monthCell => {
-      monthCell.classList.remove('hover-highlight');
+  if (monthColumnIndex >= 1 && monthColumnIndex <= 7) {
+    const monthRows = document.querySelectorAll('.months');
+    monthRows.forEach(row => {
+      const monthCell = row.children[monthColumnIndex];
+      if (monthCell && monthCell.classList.contains('month')) {
+        monthCell.classList.remove('hover-highlight');
+      }
     });
   }
   
@@ -280,8 +283,9 @@ function showWeekInfoModal(dayCell) {
     });
   }
   
-  // Position modal in center of screen
+  // Position modal in center of calendar area
   const modal = calendarState.weekInfoModal;
+  const calendarContainer = document.getElementById('one-page-calendar-container');
   
   // Get modal dimensions (temporarily show to calculate)
   modal.style.display = 'block';
@@ -290,9 +294,15 @@ function showWeekInfoModal(dayCell) {
   const modalWidth = modal.offsetWidth || 400;
   const modalHeight = modal.offsetHeight || 350;
   
-  // Calculate center position
-  const left = (window.innerWidth - modalWidth) / 2;
-  const top = (window.innerHeight - modalHeight) / 2;
+  // Get calendar container position and dimensions
+  const calendarRect = calendarContainer.getBoundingClientRect();
+  
+  // Calculate center position within calendar area
+  const calendarCenterX = calendarRect.left + calendarRect.width / 2;
+  const calendarCenterY = calendarRect.top + calendarRect.height / 2;
+  
+  const left = calendarCenterX - modalWidth / 2;
+  const top = calendarCenterY - modalHeight / 2;
   
   // Reset temporary styles
   modal.style.display = '';
