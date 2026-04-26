@@ -1,5 +1,233 @@
 /*global moment, bootstrap*/
 
+const SeasonTheme = {
+  SPRING: 'spring',
+  SUMMER: 'summer',
+  AUTUMN: 'autumn',
+  WINTER: 'winter'
+};
+
+function getSeasonByMonth(month) {
+  if (month >= 2 && month <= 4) return SeasonTheme.SPRING;
+  if (month >= 5 && month <= 7) return SeasonTheme.SUMMER;
+  if (month >= 8 && month <= 10) return SeasonTheme.AUTUMN;
+  return SeasonTheme.WINTER;
+}
+
+let currentTheme = null;
+let smokeAnimation = null;
+let smokeParticles = [];
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  currentTheme = theme;
+  localStorage.setItem('current-theme', theme);
+  
+  if (smokeAnimation) {
+    updateSmokeColors();
+  }
+}
+
+function createRipple(event, element) {
+  const ripple = document.createElement('div');
+  ripple.classList.add('ripple');
+  
+  const rect = element.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  const x = event.clientX - rect.left - size / 2;
+  const y = event.clientY - rect.top - size / 2;
+  
+  const rippleColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-ripple').trim();
+  
+  ripple.style.width = `${size}px`;
+  ripple.style.height = `${size}px`;
+  ripple.style.left = `${x}px`;
+  ripple.style.top = `${y}px`;
+  ripple.style.backgroundColor = rippleColor;
+  
+  element.style.position = 'relative';
+  element.style.overflow = 'hidden';
+  
+  element.appendChild(ripple);
+  
+  ripple.addEventListener('animationend', () => {
+    ripple.remove();
+  });
+  
+  const nearbyCells = getNearbyCells(element, 2);
+  nearbyCells.forEach(cell => {
+    if (cell !== element) {
+      createSubRipple(cell, rippleColor);
+    }
+  });
+}
+
+function createSubRipple(element, color) {
+  setTimeout(() => {
+    const ripple = document.createElement('div');
+    ripple.classList.add('ripple');
+    
+    const rect = element.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    
+    ripple.style.width = `${size}px`;
+    ripple.style.height = `${size}px`;
+    ripple.style.left = '50%';
+    ripple.style.top = '50%';
+    ripple.style.transform = 'translate(-50%, -50%) scale(0)';
+    ripple.style.backgroundColor = color;
+    ripple.style.animationDuration = '0.6s';
+    
+    element.style.position = 'relative';
+    element.style.overflow = 'hidden';
+    
+    element.appendChild(ripple);
+    
+    ripple.addEventListener('animationend', () => {
+      ripple.remove();
+    });
+  }, 50);
+}
+
+function getNearbyCells(element, range) {
+  const allCells = Array.from(document.querySelectorAll('#one-page-calendar td'));
+  const cellIndex = allCells.indexOf(element);
+  
+  if (cellIndex === -1) return [element];
+  
+  const row = Math.floor(cellIndex / 12);
+  const col = cellIndex % 12;
+  
+  const nearbyCells = [element];
+  
+  allCells.forEach((cell, index) => {
+    const cellRow = Math.floor(index / 12);
+    const cellCol = index % 12;
+    
+    const rowDiff = Math.abs(cellRow - row);
+    const colDiff = Math.abs(cellCol - col);
+    
+    if (rowDiff <= range && colDiff <= range && (rowDiff > 0 || colDiff > 0)) {
+      nearbyCells.push(cell);
+    }
+  });
+  
+  return nearbyCells;
+}
+
+function initSmokeCanvas() {
+  const canvas = document.getElementById('smoke-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('one-page-calendar-container');
+  
+  function resizeCanvas() {
+    canvas.width = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    initSmokeParticles();
+  }
+  
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    updateAndDrawSmoke(ctx, canvas.width, canvas.height);
+    smokeAnimation = requestAnimationFrame(animate);
+  }
+  
+  animate();
+}
+
+function initSmokeParticles() {
+  const canvas = document.getElementById('smoke-canvas');
+  if (!canvas) return;
+  
+  smokeParticles = [];
+  const particleCount = 8;
+  
+  for (let i = 0; i < particleCount; i++) {
+    smokeParticles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 150 + 100,
+      speedX: (Math.random() - 0.5) * 0.3,
+      speedY: (Math.random() - 0.5) * 0.3,
+      colorIndex: i % 3,
+      opacity: Math.random() * 0.3 + 0.1,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function getSmokeColors() {
+  const style = getComputedStyle(document.documentElement);
+  return [
+    style.getPropertyValue('--theme-smoke-1').trim(),
+    style.getPropertyValue('--theme-smoke-2').trim(),
+    style.getPropertyValue('--theme-smoke-3').trim()
+  ];
+}
+
+function updateSmokeColors() {
+  const colors = getSmokeColors();
+  smokeParticles.forEach((particle, index) => {
+    particle.colorIndex = index % 3;
+  });
+}
+
+function updateAndDrawSmoke(ctx, width, height) {
+  const colors = getSmokeColors();
+  const time = Date.now() * 0.001;
+  
+  smokeParticles.forEach(particle => {
+    particle.x += particle.speedX;
+    particle.y += particle.speedY;
+    
+    const waveOffset = Math.sin(time + particle.phase) * 0.5;
+    particle.x += waveOffset * 0.1;
+    particle.y += Math.cos(time + particle.phase) * 0.05;
+    
+    if (particle.x - particle.radius > width) particle.x = -particle.radius;
+    if (particle.x + particle.radius < 0) particle.x = width + particle.radius;
+    if (particle.y - particle.radius > height) particle.y = -particle.radius;
+    if (particle.y + particle.radius < 0) particle.y = height + particle.radius;
+    
+    const gradient = ctx.createRadialGradient(
+      particle.x, particle.y, 0,
+      particle.x, particle.y, particle.radius
+    );
+    
+    const color = colors[particle.colorIndex];
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(0.5, color.replace(/[\d\.]+\)$/, (match) => {
+      const opacity = parseFloat(match) * 0.6;
+      return opacity + ')';
+    }));
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  });
+}
+
+function handleDayClick(event) {
+  const dayElement = event.currentTarget;
+  const months = dayElement.dataset.months;
+  
+  if (months) {
+    const monthsArray = JSON.parse(months);
+    const firstMonth = monthsArray[0];
+    const season = getSeasonByMonth(firstMonth);
+    applyTheme(season);
+  }
+  
+  createRipple(event, dayElement);
+}
+
 // Custom $(document).ready() function
 function ready(fn) {
   if (document.readyState != 'loading') {
@@ -178,4 +406,34 @@ ready(() => {
       trigger: 'hover'
     });
   });
+  
+  // Initialize theme based on current date or saved preference
+  const savedTheme = localStorage.getItem('current-theme');
+  if (savedTheme) {
+    applyTheme(savedTheme);
+  } else {
+    const currentMonth = moment().month();
+    const currentSeason = getSeasonByMonth(currentMonth);
+    applyTheme(currentSeason);
+  }
+  
+  // Add click event listeners to day cells
+  function attachDayClickListeners() {
+    document.querySelectorAll('.day').forEach(dayElement => {
+      dayElement.addEventListener('click', handleDayClick);
+    });
+  }
+  
+  attachDayClickListeners();
+  
+  const originalPopulateCalendar = populateCalendar;
+  populateCalendar = function() {
+    originalPopulateCalendar();
+    attachDayClickListeners();
+  };
+  
+  // Initialize smoke canvas
+  setTimeout(() => {
+    initSmokeCanvas();
+  }, 100);
 });
