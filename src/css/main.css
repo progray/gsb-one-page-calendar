@@ -54,6 +54,94 @@ html[data-bs-theme="dark"] #bottom-credits img {
   }
 }
 
+.day, .month, .date {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.day.active-checkin,
+.month.active-checkin,
+.date.active-checkin {
+  outline: 3px solid #00ffff;
+  outline-offset: -3px;
+  animation: snake-border 2s linear infinite, glow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes snake-border {
+  0% {
+    outline-color: #00ffff;
+    box-shadow: 0 0 5px #00ffff;
+  }
+  25% {
+    outline-color: #ff00ff;
+    box-shadow: 0 0 5px #ff00ff;
+  }
+  50% {
+    outline-color: #ffff00;
+    box-shadow: 0 0 5px #ffff00;
+  }
+  75% {
+    outline-color: #00ff00;
+    box-shadow: 0 0 5px #00ff00;
+  }
+  100% {
+    outline-color: #00ffff;
+    box-shadow: 0 0 5px #00ffff;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px #00ffff, 0 0 20px rgba(0, 255, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px #00ffff, 0 0 50px #ff00ff, 0 0 75px rgba(255, 255, 0, 0.3);
+  }
+}
+
+#connection-lines {
+  overflow: visible;
+}
+
+.connection-line {
+  fill: none;
+  stroke: rgba(0, 255, 255, 0.6);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 0 15px #ff00ff);
+  opacity: 0.7;
+  animation: line-glow 2s ease-in-out infinite;
+}
+
+@keyframes line-glow {
+  0%, 100% {
+    opacity: 0.5;
+    filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 0 15px #ff00ff);
+  }
+  50% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 15px #00ffff) drop-shadow(0 0 25px #ff00ff) drop-shadow(0 0 35px #ffff00);
+  }
+}
+
+.connection-point {
+  fill: #00ffff;
+  stroke: #ff00ff;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 5px #00ffff);
+  animation: point-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes point-pulse {
+  0%, 100% {
+    r: 5;
+  }
+  50% {
+    r: 7;
+  }
+}
+
 @media print {
 
   table,
