@@ -222,11 +222,6 @@ function initPolarizationEffect() {
         span.textContent = textNode.textContent;
         cell.replaceChild(span, textNode);
       });
-      
-      const textSpan = cell.querySelector(`.${className}`);
-      if (textSpan) {
-        cell.dataset.content = textSpan.textContent;
-      }
     });
   }
 
@@ -366,11 +361,6 @@ function initPolarizationEffect() {
           textSpan.style.textShadow += `, ${highlightOffsetX}px ${highlightOffsetY}px 2px ${shadowData.highlightColor}`;
         }
         
-        cell.style.setProperty('--shadow-x', `${shadowData.shadowOffsetX}px`);
-        cell.style.setProperty('--shadow-y', `${shadowData.shadowOffsetY}px`);
-        cell.style.setProperty('--shadow-blur', `${shadowData.blurRadius}px`);
-        cell.style.setProperty('--shadow-color', shadowData.shadowColor);
-        
         const cellParallax = calculateParallaxOffset(normPos.x, normPos.y, 0.3 + shadowData.nonLinearDistance * 0.4);
         textSpan.style.transform = `
           translateZ(12px)
@@ -428,11 +418,6 @@ function initPolarizationEffect() {
         badge.style.textShadow = '';
         badge.style.boxShadow = '';
       }
-      
-      cell.style.removeProperty('--shadow-x');
-      cell.style.removeProperty('--shadow-y');
-      cell.style.removeProperty('--shadow-blur');
-      cell.style.removeProperty('--shadow-color');
     });
   }
 
