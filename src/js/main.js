@@ -294,17 +294,32 @@ function showFloatingCard(cell) {
   
   floatingCardElement = document.createElement('div');
   floatingCardElement.className = 'floating-card';
-  floatingCardElement.innerHTML = `
-    <button class="close-btn" onclick="hideFloatingCard()">×</button>
-    <div class="card-date">${date}</div>
-    <div class="card-info">
-      ${moment().date(parseInt(date)).format('dddd, MMMM D, YYYY')}<br>
-      <small>点击关闭按钮或旁边区域恢复</small>
-    </div>
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    hideFloatingCard();
+  });
+  
+  const cardDate = document.createElement('div');
+  cardDate.className = 'card-date';
+  cardDate.textContent = date;
+  
+  const cardInfo = document.createElement('div');
+  cardInfo.className = 'card-info';
+  cardInfo.innerHTML = `
+    ${moment().date(parseInt(date)).format('dddd, MMMM D, YYYY')}<br>
+    <small>点击关闭按钮或旁边区域恢复</small>
   `;
   
-  const cardWidth = 200;
-  const cardHeight = 150;
+  floatingCardElement.appendChild(closeBtn);
+  floatingCardElement.appendChild(cardDate);
+  floatingCardElement.appendChild(cardInfo);
+  
+  const cardWidth = 220;
+  const cardHeight = 160;
   const left = Math.max(10, Math.min(window.innerWidth - cardWidth - 20, rect.left - cardWidth / 2 + rect.width / 2));
   const top = Math.max(10, Math.min(window.innerHeight - cardHeight - 20, rect.top - cardHeight / 2));
   
@@ -316,6 +331,9 @@ function showFloatingCard(cell) {
   document.body.appendChild(floatingCardElement);
   
   floatingOverlay.addEventListener('click', hideFloatingCard);
+  floatingCardElement.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
 }
 
 function hideFloatingCard() {
