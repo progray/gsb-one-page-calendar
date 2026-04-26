@@ -1,5 +1,205 @@
 /*global moment, bootstrap*/
 
+const SeasonTheme = {
+  SPRING: 'spring',
+  SUMMER: 'summer',
+  AUTUMN: 'autumn',
+  WINTER: 'winter'
+};
+
+function getSeasonByMonth(month) {
+  if (month >= 2 && month <= 4) return SeasonTheme.SPRING;
+  if (month >= 5 && month <= 7) return SeasonTheme.SUMMER;
+  if (month >= 8 && month <= 10) return SeasonTheme.AUTUMN;
+  return SeasonTheme.WINTER;
+}
+
+let currentTheme = null;
+let smokeAnimation = null;
+let smokeParticles = [];
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  currentTheme = theme;
+  localStorage.setItem('current-theme', theme);
+  
+  if (smokeAnimation) {
+    updateSmokeColors();
+  }
+}
+
+function createRipple(event, element) {
+  const container = document.getElementById('one-page-calendar-container');
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  
+  const rippleColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-ripple').trim();
+  
+  const smallRipple = document.createElement('div');
+  smallRipple.classList.add('ripple');
+  
+  const smallSize = Math.max(elementRect.width, elementRect.height);
+  const smallX = event.clientX - elementRect.left - smallSize / 2;
+  const smallY = event.clientY - elementRect.top - smallSize / 2;
+  
+  smallRipple.style.width = `${smallSize}px`;
+  smallRipple.style.height = `${smallSize}px`;
+  smallRipple.style.left = `${smallX}px`;
+  smallRipple.style.top = `${smallY}px`;
+  smallRipple.style.backgroundColor = rippleColor;
+  
+  element.appendChild(smallRipple);
+  
+  smallRipple.addEventListener('animationend', () => {
+    smallRipple.remove();
+  });
+  
+  const largeRipple = document.createElement('div');
+  largeRipple.classList.add('large-ripple');
+  
+  const largeSize = Math.max(containerRect.width, containerRect.height);
+  const largeX = event.clientX - containerRect.left - largeSize / 2;
+  const largeY = event.clientY - containerRect.top - largeSize / 2;
+  
+  largeRipple.style.width = `${largeSize}px`;
+  largeRipple.style.height = `${largeSize}px`;
+  largeRipple.style.left = `${largeX}px`;
+  largeRipple.style.top = `${largeY}px`;
+  largeRipple.style.backgroundColor = rippleColor;
+  
+  container.appendChild(largeRipple);
+  
+  largeRipple.addEventListener('animationend', () => {
+    largeRipple.remove();
+  });
+}
+
+function initSmokeCanvas() {
+  const canvas = document.getElementById('smoke-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('one-page-calendar-container');
+  
+  function resizeCanvas() {
+    canvas.width = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    initSmokeParticles();
+  }
+  
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    updateAndDrawSmoke(ctx, canvas.width, canvas.height);
+    smokeAnimation = requestAnimationFrame(animate);
+  }
+  
+  animate();
+}
+
+function initSmokeParticles() {
+  const canvas = document.getElementById('smoke-canvas');
+  if (!canvas) return;
+  
+  smokeParticles = [];
+  const particleCount = 12;
+  
+  for (let i = 0; i < particleCount; i++) {
+    smokeParticles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 200 + 150,
+      speedX: (Math.random() - 0.5) * 0.15,
+      speedY: (Math.random() - 0.5) * 0.15,
+      colorIndex: i % 3,
+      opacity: Math.random() * 0.4 + 0.2,
+      phase: Math.random() * Math.PI * 2,
+      pulsePhase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function getSmokeColors() {
+  const style = getComputedStyle(document.documentElement);
+  return [
+    style.getPropertyValue('--theme-smoke-1').trim(),
+    style.getPropertyValue('--theme-smoke-2').trim(),
+    style.getPropertyValue('--theme-smoke-3').trim()
+  ];
+}
+
+function updateSmokeColors() {
+  const colors = getSmokeColors();
+  smokeParticles.forEach((particle, index) => {
+    particle.colorIndex = index % 3;
+  });
+}
+
+function updateAndDrawSmoke(ctx, width, height) {
+  const colors = getSmokeColors();
+  const time = Date.now() * 0.001;
+  
+  smokeParticles.forEach(particle => {
+    particle.x += particle.speedX;
+    particle.y += particle.speedY;
+    
+    const waveOffset = Math.sin(time * 0.3 + particle.phase) * 0.8;
+    particle.x += waveOffset * 0.15;
+    particle.y += Math.cos(time * 0.25 + particle.phase) * 0.08;
+    
+    const pulse = Math.sin(time * 0.5 + particle.pulsePhase) * 0.3 + 1;
+    const currentRadius = particle.radius * pulse;
+    
+    if (particle.x - currentRadius > width) particle.x = -currentRadius;
+    if (particle.x + currentRadius < 0) particle.x = width + currentRadius;
+    if (particle.y - currentRadius > height) particle.y = -currentRadius;
+    if (particle.y + currentRadius < 0) particle.y = height + currentRadius;
+    
+    const gradient = ctx.createRadialGradient(
+      particle.x, particle.y, 0,
+      particle.x, particle.y, currentRadius
+    );
+    
+    const color = colors[particle.colorIndex];
+    const opacityMultiplier = (Math.sin(time * 0.3 + particle.pulsePhase) * 0.3 + 0.8);
+    
+    gradient.addColorStop(0, color.replace(/[\d\.]+\)$/, (match) => {
+      const opacity = parseFloat(match) * opacityMultiplier;
+      return opacity + ')';
+    }));
+    gradient.addColorStop(0.3, color.replace(/[\d\.]+\)$/, (match) => {
+      const opacity = parseFloat(match) * 0.6 * opacityMultiplier;
+      return opacity + ')';
+    }));
+    gradient.addColorStop(0.7, color.replace(/[\d\.]+\)$/, (match) => {
+      const opacity = parseFloat(match) * 0.3 * opacityMultiplier;
+      return opacity + ')';
+    }));
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, currentRadius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  });
+}
+
+function handleDayClick(event) {
+  const dayElement = event.currentTarget;
+  const months = dayElement.dataset.months;
+  
+  if (months) {
+    const monthsArray = JSON.parse(months);
+    const firstMonth = monthsArray[0];
+    const season = getSeasonByMonth(firstMonth);
+    applyTheme(season);
+  }
+  
+  createRipple(event, dayElement);
+}
+
 // Custom $(document).ready() function
 function ready(fn) {
   if (document.readyState != 'loading') {
@@ -178,4 +378,34 @@ ready(() => {
       trigger: 'hover'
     });
   });
+  
+  // Initialize theme based on current date or saved preference
+  const savedTheme = localStorage.getItem('current-theme');
+  if (savedTheme) {
+    applyTheme(savedTheme);
+  } else {
+    const currentMonth = moment().month();
+    const currentSeason = getSeasonByMonth(currentMonth);
+    applyTheme(currentSeason);
+  }
+  
+  // Add click event listeners to day cells
+  function attachDayClickListeners() {
+    document.querySelectorAll('.day').forEach(dayElement => {
+      dayElement.addEventListener('click', handleDayClick);
+    });
+  }
+  
+  attachDayClickListeners();
+  
+  const originalPopulateCalendar = populateCalendar;
+  populateCalendar = function() {
+    originalPopulateCalendar();
+    attachDayClickListeners();
+  };
+  
+  // Initialize smoke canvas
+  setTimeout(() => {
+    initSmokeCanvas();
+  }, 100);
 });
