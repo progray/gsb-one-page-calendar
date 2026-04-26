@@ -119,9 +119,7 @@ function checkTightSpot() {
 // Find all elements that have any class ending in "-light" or "-dark"
 function toggleLightDarkClasses() {
   document.body.querySelectorAll('[class*="-light"], [class*="-dark"]').forEach(el => {
-    // get the full className string
     let cls = el.className;
-    // regex to replace all "-light" suffixes with "-dark", and "-dark" with "-light"
     cls = cls.replace(/\b([^\s]+?)-(light|dark)\b/g, (match, base, suffix) => {
       return base + (suffix === 'light' ? '-dark' : '-light');
     });
@@ -129,7 +127,126 @@ function toggleLightDarkClasses() {
   });
 }
 
+const MOOD_COLORS = ['', 'gray', 'green', 'orange', 'red'];
+const STORAGE_KEY_PREFIX = 'opc_mood_';
 
+function getDateStorageKey(dateNum, year) {
+  return STORAGE_KEY_PREFIX + year + '_' + dateNum;
+}
+
+function getMoodData(dateNum, year) {
+  const key = getDateStorageKey(dateNum, year);
+  const stored = localStorage.getItem(key);
+  if (stored) {
+    return JSON.parse(stored);
+  }
+  return { moodIndex: 0, isMilestone: false };
+}
+
+function saveMoodData(dateNum, year, moodData) {
+  const key = getDateStorageKey(dateNum, year);
+  localStorage.setItem(key, JSON.stringify(moodData));
+}
+
+function clearMoodData(dateNum, year) {
+  const key = getDateStorageKey(dateNum, year);
+  localStorage.removeItem(key);
+}
+
+function applyMoodToElement(element, moodData) {
+  element.classList.remove('mood-gray', 'mood-green', 'mood-orange', 'mood-red', 'mood-colored', 'milestone');
+
+  if (moodData.moodIndex > 0 && moodData.moodIndex < MOOD_COLORS.length) {
+    const colorClass = 'mood-' + MOOD_COLORS[moodData.moodIndex];
+    element.classList.add(colorClass, 'mood-colored');
+  }
+
+  if (moodData.isMilestone) {
+    element.classList.add('milestone');
+  }
+}
+
+function triggerFlipAnimation(element) {
+  element.classList.remove('flip-animation');
+  void element.offsetWidth;
+  element.classList.add('flip-animation');
+
+  setTimeout(() => {
+    element.classList.remove('flip-animation');
+  }, 600);
+}
+
+function handleDateCellClick(element, year) {
+  const dateNum = parseInt(element.textContent.trim(), 10);
+  if (isNaN(dateNum) || dateNum < 1 || dateNum > 31) return;
+
+  let moodData = getMoodData(dateNum, year);
+
+  if (moodData.isMilestone) {
+    moodData.isMilestone = false;
+    if (moodData.moodIndex === 0) {
+      clearMoodData(dateNum, year);
+    } else {
+      saveMoodData(dateNum, year, moodData);
+    }
+  } else {
+    moodData.moodIndex = (moodData.moodIndex + 1) % MOOD_COLORS.length;
+    if (moodData.moodIndex === 0) {
+      clearMoodData(dateNum, year);
+    } else {
+      saveMoodData(dateNum, year, moodData);
+    }
+  }
+
+  triggerFlipAnimation(element);
+  applyMoodToElement(element, getMoodData(dateNum, year));
+}
+
+function handleDateCellDoubleClick(element, year) {
+  const dateNum = parseInt(element.textContent.trim(), 10);
+  if (isNaN(dateNum) || dateNum < 1 || dateNum > 31) return;
+
+  let moodData = getMoodData(dateNum, year);
+  moodData.isMilestone = !moodData.isMilestone;
+
+  if (moodData.moodIndex === 0 && !moodData.isMilestone) {
+    clearMoodData(dateNum, year);
+  } else {
+    saveMoodData(dateNum, year, moodData);
+  }
+
+  triggerFlipAnimation(element);
+  applyMoodToElement(element, moodData);
+}
+
+function initMoodCalendar() {
+  const year = moment().year();
+  const clickDelay = 300;
+
+  document.querySelectorAll('.date').forEach(element => {
+    if (element.textContent.trim() === '') return;
+
+    const dateNum = parseInt(element.textContent.trim(), 10);
+    if (!isNaN(dateNum) && dateNum >= 1 && dateNum <= 31) {
+      const moodData = getMoodData(dateNum, year);
+      applyMoodToElement(element, moodData);
+    }
+
+    let clickTimer = null;
+    element.addEventListener('click', (e) => {
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        handleDateCellDoubleClick(element, year);
+      } else {
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          handleDateCellClick(element, year);
+        }, clickDelay);
+      }
+    });
+  });
+}
 
 ready(() => {
   // Dark Mode
@@ -171,6 +288,8 @@ ready(() => {
   // Main functionality
   moment.locale(window.navigator.language);
   populateCalendar();
+  // Mood Calendar
+  initMoodCalendar();
   // Tooltips
   [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).map(element => {
     new bootstrap.Tooltip(element, {
