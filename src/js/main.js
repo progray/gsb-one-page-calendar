@@ -29,95 +29,49 @@ function applyTheme(theme) {
 }
 
 function createRipple(event, element) {
-  const ripple = document.createElement('div');
-  ripple.classList.add('ripple');
-  
-  const rect = element.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height);
-  const x = event.clientX - rect.left - size / 2;
-  const y = event.clientY - rect.top - size / 2;
+  const container = document.getElementById('one-page-calendar-container');
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
   
   const rippleColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-ripple').trim();
   
-  ripple.style.width = `${size}px`;
-  ripple.style.height = `${size}px`;
-  ripple.style.left = `${x}px`;
-  ripple.style.top = `${y}px`;
-  ripple.style.backgroundColor = rippleColor;
+  const smallRipple = document.createElement('div');
+  smallRipple.classList.add('ripple');
   
-  element.style.position = 'relative';
-  element.style.overflow = 'hidden';
+  const smallSize = Math.max(elementRect.width, elementRect.height);
+  const smallX = event.clientX - elementRect.left - smallSize / 2;
+  const smallY = event.clientY - elementRect.top - smallSize / 2;
   
-  element.appendChild(ripple);
+  smallRipple.style.width = `${smallSize}px`;
+  smallRipple.style.height = `${smallSize}px`;
+  smallRipple.style.left = `${smallX}px`;
+  smallRipple.style.top = `${smallY}px`;
+  smallRipple.style.backgroundColor = rippleColor;
   
-  ripple.addEventListener('animationend', () => {
-    ripple.remove();
+  element.appendChild(smallRipple);
+  
+  smallRipple.addEventListener('animationend', () => {
+    smallRipple.remove();
   });
   
-  const nearbyCells = getNearbyCells(element, 2);
-  nearbyCells.forEach(cell => {
-    if (cell !== element) {
-      createSubRipple(cell, rippleColor);
-    }
+  const largeRipple = document.createElement('div');
+  largeRipple.classList.add('large-ripple');
+  
+  const largeSize = Math.max(containerRect.width, containerRect.height);
+  const largeX = event.clientX - containerRect.left - largeSize / 2;
+  const largeY = event.clientY - containerRect.top - largeSize / 2;
+  
+  largeRipple.style.width = `${largeSize}px`;
+  largeRipple.style.height = `${largeSize}px`;
+  largeRipple.style.left = `${largeX}px`;
+  largeRipple.style.top = `${largeY}px`;
+  largeRipple.style.backgroundColor = rippleColor;
+  
+  container.appendChild(largeRipple);
+  
+  largeRipple.addEventListener('animationend', () => {
+    largeRipple.remove();
   });
-}
-
-function createSubRipple(element, color) {
-  if (!element.classList.contains('day')) {
-    return;
-  }
-  
-  setTimeout(() => {
-    const ripple = document.createElement('div');
-    ripple.classList.add('ripple');
-    
-    const rect = element.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    
-    ripple.style.width = `${size}px`;
-    ripple.style.height = `${size}px`;
-    ripple.style.left = '50%';
-    ripple.style.top = '50%';
-    ripple.style.transform = 'translate(-50%, -50%) scale(0)';
-    ripple.style.backgroundColor = color;
-    ripple.style.animationDuration = '0.6s';
-    
-    element.appendChild(ripple);
-    
-    ripple.addEventListener('animationend', () => {
-      ripple.remove();
-    });
-  }, 50);
-}
-
-function getNearbyCells(element, range) {
-  const allDayCells = Array.from(document.querySelectorAll('#one-page-calendar .day'));
-  const allCells = Array.from(document.querySelectorAll('#one-page-calendar td'));
-  const cellIndex = allCells.indexOf(element);
-  
-  if (cellIndex === -1) return [element];
-  
-  const row = Math.floor(cellIndex / 12);
-  const col = cellIndex % 12;
-  
-  const nearbyCells = [element];
-  
-  allDayCells.forEach((dayCell) => {
-    const dayCellIndex = allCells.indexOf(dayCell);
-    if (dayCellIndex === -1 || dayCell === element) return;
-    
-    const cellRow = Math.floor(dayCellIndex / 12);
-    const cellCol = dayCellIndex % 12;
-    
-    const rowDiff = Math.abs(cellRow - row);
-    const colDiff = Math.abs(cellCol - col);
-    
-    if (rowDiff <= range && colDiff <= range && (rowDiff > 0 || colDiff > 0)) {
-      nearbyCells.push(dayCell);
-    }
-  });
-  
-  return nearbyCells;
 }
 
 function initSmokeCanvas() {
@@ -150,18 +104,19 @@ function initSmokeParticles() {
   if (!canvas) return;
   
   smokeParticles = [];
-  const particleCount = 8;
+  const particleCount = 12;
   
   for (let i = 0; i < particleCount; i++) {
     smokeParticles.push({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      radius: Math.random() * 150 + 100,
-      speedX: (Math.random() - 0.5) * 0.3,
-      speedY: (Math.random() - 0.5) * 0.3,
+      radius: Math.random() * 200 + 150,
+      speedX: (Math.random() - 0.5) * 0.15,
+      speedY: (Math.random() - 0.5) * 0.15,
       colorIndex: i % 3,
-      opacity: Math.random() * 0.3 + 0.1,
-      phase: Math.random() * Math.PI * 2
+      opacity: Math.random() * 0.4 + 0.2,
+      phase: Math.random() * Math.PI * 2,
+      pulsePhase: Math.random() * Math.PI * 2
     });
   }
 }
@@ -190,30 +145,42 @@ function updateAndDrawSmoke(ctx, width, height) {
     particle.x += particle.speedX;
     particle.y += particle.speedY;
     
-    const waveOffset = Math.sin(time + particle.phase) * 0.5;
-    particle.x += waveOffset * 0.1;
-    particle.y += Math.cos(time + particle.phase) * 0.05;
+    const waveOffset = Math.sin(time * 0.3 + particle.phase) * 0.8;
+    particle.x += waveOffset * 0.15;
+    particle.y += Math.cos(time * 0.25 + particle.phase) * 0.08;
     
-    if (particle.x - particle.radius > width) particle.x = -particle.radius;
-    if (particle.x + particle.radius < 0) particle.x = width + particle.radius;
-    if (particle.y - particle.radius > height) particle.y = -particle.radius;
-    if (particle.y + particle.radius < 0) particle.y = height + particle.radius;
+    const pulse = Math.sin(time * 0.5 + particle.pulsePhase) * 0.3 + 1;
+    const currentRadius = particle.radius * pulse;
+    
+    if (particle.x - currentRadius > width) particle.x = -currentRadius;
+    if (particle.x + currentRadius < 0) particle.x = width + currentRadius;
+    if (particle.y - currentRadius > height) particle.y = -currentRadius;
+    if (particle.y + currentRadius < 0) particle.y = height + currentRadius;
     
     const gradient = ctx.createRadialGradient(
       particle.x, particle.y, 0,
-      particle.x, particle.y, particle.radius
+      particle.x, particle.y, currentRadius
     );
     
     const color = colors[particle.colorIndex];
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(0.5, color.replace(/[\d\.]+\)$/, (match) => {
-      const opacity = parseFloat(match) * 0.6;
+    const opacityMultiplier = (Math.sin(time * 0.3 + particle.pulsePhase) * 0.3 + 0.8);
+    
+    gradient.addColorStop(0, color.replace(/[\d\.]+\)$/, (match) => {
+      const opacity = parseFloat(match) * opacityMultiplier;
+      return opacity + ')';
+    }));
+    gradient.addColorStop(0.3, color.replace(/[\d\.]+\)$/, (match) => {
+      const opacity = parseFloat(match) * 0.6 * opacityMultiplier;
+      return opacity + ')';
+    }));
+    gradient.addColorStop(0.7, color.replace(/[\d\.]+\)$/, (match) => {
+      const opacity = parseFloat(match) * 0.3 * opacityMultiplier;
       return opacity + ')';
     }));
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
     
     ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+    ctx.arc(particle.x, particle.y, currentRadius, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
   });
