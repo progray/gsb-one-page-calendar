@@ -183,12 +183,7 @@ function handleDateCellClick(element, year) {
   let moodData = getMoodData(dateNum, year);
 
   if (moodData.isMilestone) {
-    moodData.isMilestone = false;
-    if (moodData.moodIndex === 0) {
-      clearMoodData(dateNum, year);
-    } else {
-      saveMoodData(dateNum, year, moodData);
-    }
+    clearMoodData(dateNum, year);
   } else {
     moodData.moodIndex = (moodData.moodIndex + 1) % MOOD_COLORS.length;
     if (moodData.moodIndex === 0) {
