@@ -245,7 +245,7 @@ function restoreCheckinState() {
   const allCells = document.querySelectorAll('.day, .month, .date');
   const storage = getCheckinStorage();
   
-  allCells.forEach(cell => {
+  allCells.forEach((cell, index) => {
     const cellId = generateCellId(cell);
     if (storage[cellId]) {
       cell.classList.add('active-checkin');

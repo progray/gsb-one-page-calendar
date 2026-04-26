@@ -60,85 +60,98 @@ html[data-bs-theme="dark"] #bottom-credits img {
   transition: all 0.3s ease;
 }
 
-.day.active-checkin,
-.month.active-checkin,
-.date.active-checkin {
-  outline: 3px solid #00ffff;
-  outline-offset: -3px;
-  animation: snake-border 2s linear infinite, glow-pulse 1.5s ease-in-out infinite;
+#one-page-calendar .day.active-checkin,
+#one-page-calendar .month.active-checkin,
+#one-page-calendar .date.active-checkin {
+  position: relative;
+  z-index: 10;
+  background-color: #1a4a4a !important;
+  box-shadow: none !important;
+  animation: checkin-glow-dark 2s ease-in-out infinite;
 }
 
-@keyframes snake-border {
-  0% {
-    outline-color: #00ffff;
-    box-shadow: 0 0 5px #00ffff;
-  }
-  25% {
-    outline-color: #ff00ff;
-    box-shadow: 0 0 5px #ff00ff;
-  }
-  50% {
-    outline-color: #ffff00;
-    box-shadow: 0 0 5px #ffff00;
-  }
-  75% {
-    outline-color: #00ff00;
-    box-shadow: 0 0 5px #00ff00;
-  }
-  100% {
-    outline-color: #00ffff;
-    box-shadow: 0 0 5px #00ffff;
-  }
+html[data-bs-theme="light"] #one-page-calendar .day.active-checkin,
+html[data-bs-theme="light"] #one-page-calendar .month.active-checkin,
+html[data-bs-theme="light"] #one-page-calendar .date.active-checkin {
+  background-color: #b3ffff !important;
+  animation: checkin-glow-light 2s ease-in-out infinite;
 }
 
-@keyframes glow-pulse {
+@keyframes checkin-glow-dark {
   0%, 100% {
-    box-shadow: 0 0 10px #00ffff, 0 0 20px rgba(0, 255, 255, 0.5);
+    background-color: #1a4a4a;
+    outline: 3px solid #00ffff;
+    outline-offset: -3px;
+    box-shadow: 0 0 15px #00ffff, 0 0 30px rgba(0, 255, 255, 0.5) !important;
   }
   50% {
-    box-shadow: 0 0 25px #00ffff, 0 0 50px #ff00ff, 0 0 75px rgba(255, 255, 0, 0.3);
+    background-color: #2a5a5a;
+    outline: 3px solid #ff00ff;
+    outline-offset: -3px;
+    box-shadow: 0 0 25px #ff00ff, 0 0 50px rgba(255, 0, 255, 0.5) !important;
+  }
+}
+
+@keyframes checkin-glow-light {
+  0%, 100% {
+    background-color: #b3ffff;
+    outline: 3px solid #00cccc;
+    outline-offset: -3px;
+    box-shadow: 0 0 15px #00cccc, 0 0 30px rgba(0, 204, 204, 0.5) !important;
+  }
+  50% {
+    background-color: #ccffff;
+    outline: 3px solid #cc00cc;
+    outline-offset: -3px;
+    box-shadow: 0 0 25px #cc00cc, 0 0 50px rgba(204, 0, 204, 0.5) !important;
   }
 }
 
 #connection-lines {
   overflow: visible;
+  z-index: 100;
+  pointer-events: none;
 }
 
 .connection-line {
   fill: none;
-  stroke: rgba(0, 255, 255, 0.6);
-  stroke-width: 3;
+  stroke: #00ffff;
+  stroke-width: 4;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 0 15px #ff00ff);
-  opacity: 0.7;
-  animation: line-glow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 20px #ff00ff);
+  opacity: 0.8;
+  animation: line-pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes line-glow {
+@keyframes line-pulse {
   0%, 100% {
-    opacity: 0.5;
-    filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 0 15px #ff00ff);
+    opacity: 0.6;
+    stroke: #00ffff;
+    stroke-width: 3;
   }
   50% {
-    opacity: 0.9;
-    filter: drop-shadow(0 0 15px #00ffff) drop-shadow(0 0 25px #ff00ff) drop-shadow(0 0 35px #ffff00);
+    opacity: 1;
+    stroke: #ff00ff;
+    stroke-width: 5;
   }
 }
 
 .connection-point {
   fill: #00ffff;
-  stroke: #ff00ff;
-  stroke-width: 2;
-  filter: drop-shadow(0 0 5px #00ffff);
-  animation: point-pulse 1.5s ease-in-out infinite;
+  stroke: #ffffff;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px #00ffff);
+  animation: point-bounce 1s ease-in-out infinite;
 }
 
-@keyframes point-pulse {
+@keyframes point-bounce {
   0%, 100% {
-    r: 5;
+    r: 6;
+    fill: #00ffff;
   }
   50% {
-    r: 7;
+    r: 10;
+    fill: #ff00ff;
   }
 }
 
