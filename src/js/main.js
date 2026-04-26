@@ -63,6 +63,10 @@ function createRipple(event, element) {
 }
 
 function createSubRipple(element, color) {
+  if (!element.classList.contains('day')) {
+    return;
+  }
+  
   setTimeout(() => {
     const ripple = document.createElement('div');
     ripple.classList.add('ripple');
@@ -78,9 +82,6 @@ function createSubRipple(element, color) {
     ripple.style.backgroundColor = color;
     ripple.style.animationDuration = '0.6s';
     
-    element.style.position = 'relative';
-    element.style.overflow = 'hidden';
-    
     element.appendChild(ripple);
     
     ripple.addEventListener('animationend', () => {
@@ -90,6 +91,7 @@ function createSubRipple(element, color) {
 }
 
 function getNearbyCells(element, range) {
+  const allDayCells = Array.from(document.querySelectorAll('#one-page-calendar .day'));
   const allCells = Array.from(document.querySelectorAll('#one-page-calendar td'));
   const cellIndex = allCells.indexOf(element);
   
@@ -100,15 +102,18 @@ function getNearbyCells(element, range) {
   
   const nearbyCells = [element];
   
-  allCells.forEach((cell, index) => {
-    const cellRow = Math.floor(index / 12);
-    const cellCol = index % 12;
+  allDayCells.forEach((dayCell) => {
+    const dayCellIndex = allCells.indexOf(dayCell);
+    if (dayCellIndex === -1 || dayCell === element) return;
+    
+    const cellRow = Math.floor(dayCellIndex / 12);
+    const cellCol = dayCellIndex % 12;
     
     const rowDiff = Math.abs(cellRow - row);
     const colDiff = Math.abs(cellCol - col);
     
     if (rowDiff <= range && colDiff <= range && (rowDiff > 0 || colDiff > 0)) {
-      nearbyCells.push(cell);
+      nearbyCells.push(dayCell);
     }
   });
   

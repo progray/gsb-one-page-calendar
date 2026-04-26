@@ -113,8 +113,6 @@ body {
   border-color: var(--theme-border) !important;
   color: var(--theme-text) !important;
   transition: all var(--transition-duration) ease;
-  position: relative;
-  overflow: hidden;
 }
 
 #one-page-calendar .day {
